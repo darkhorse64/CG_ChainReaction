@@ -1,0 +1,111 @@
+<div style="color:#000000;background-color:rgba(255,255,255,0.5);padding:20px;margin-bottom:10px;text-align:left">
+  Chain Reaction is a two-player strategy game. Place orbs on your cells, push them to critical mass and watch the explosions cascade across the board — a single well-placed move can flip the entire game.
+</div>
+<div class="statement-body">
+
+  <!-- RULES -->
+  <div class="statement-section statement-rules">
+    <h1>
+      <span class="icon icon-rules">&nbsp;</span>
+      <span>Rules</span>
+    </h1>
+    <div class="statement-rules-content">
+      The game is played on an <const>8×8</const> grid. Rows are numbered <const>0–7</const> top to bottom, columns <const>0–7</const> left to right.
+      <br><br>
+      The game starts with <strong>one red orb at the top-left corner (0,0)</strong> and <strong>one blue orb at the bottom-right corner (7,7)</strong>.
+      <br><br>
+      <strong>Placing an orb</strong>
+      <ul>
+        <li>On your turn, choose a cell that <strong>already belongs to you</strong> and add one orb to it.</li>
+        <li>You cannot play on an empty cell or a cell owned by your opponent.</li>
+      </ul>
+      <strong>Critical mass &amp; explosions</strong>
+      <ul>
+        <li>Each cell's critical mass equals its number of orthogonal neighbours: <const>2</const> for corners, <const>3</const> for edges, <const>4</const> for interior cells.</li>
+        <li>When a cell reaches its critical mass it <strong>explodes</strong>: the cell empties and each orthogonal neighbour receives 1 orb and is captured by you.</li>
+        <li>A neighbour that then reaches its critical mass also explodes — producing a <strong>chain reaction</strong>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- EXPERT RULES -->
+  <div class="statement-section statement-expertrules">
+    <h1>
+      <span class="icon icon-expertrules">&nbsp;</span>
+      <span>Expert Rules</span>
+    </h1>
+    <div class="statement-expert-rules-content">
+      The game ends after <const>200</const> turns; the player with the most orbs wins. In case of a tie, no winner is declared.
+    </div>
+  </div>
+
+  <!-- Victory conditions -->
+  <div class="statement-victory-conditions">
+    <div class="icon victory"></div>
+    <div class="blk">
+      <div class="title">Victory Conditions</div>
+      <div class="text">
+        <ul style="padding-bottom:0">
+          <li>All orbs on the board belong to you.</li>
+          <li>You have more orbs than your opponent when the game ends.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lose conditions -->
+  <div class="statement-lose-conditions">
+    <div class="icon lose"></div>
+    <div class="blk">
+      <div class="title">Loss Conditions</div>
+      <div class="text">
+        <ul style="padding-bottom:0">
+          <li>You have no orbs left on the board.</li>
+          <li>You play on a cell that does not belong to you.</li>
+          <li>You do not respond in time or output an invalid move.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROTOCOL -->
+  <div class="statement-section statement-protocol">
+    <h1>
+      <span class="icon icon-protocol">&nbsp;</span>
+      <span>Game Protocol</span>
+    </h1>
+
+    <div class="blk">
+      <div class="title">Initial input</div>
+      <div class="text">
+        <span class="statement-lineno">First line</span>: <var>color</var>: your color — <const>r</const> (red, first player) or <const>b</const> (blue, second player).
+      </div>
+    </div>
+
+    <div class="blk">
+      <div class="title">Input for one game turn</div>
+      <div class="text">
+        <span class="statement-lineno">First line</span>: two integers <var>redOrbs</var> and <var>blueOrbs</var>, the total orb counts for each color.
+        <br>
+        <span class="statement-lineno">Next <const>8</const> lines</span>: <const>8</const> space-separated tokens <var>cells</var>, one per cell, row <const>0</const> first.
+        Each token is <const>.</const> (empty), <const>r1</const>–<const>r3</const> (red cell with 1–3 orbs), or <const>b1</const>–<const>b3</const> (blue cell with 1–3 orbs).
+      </div>
+    </div>
+
+    <div class="blk">
+      <div class="title">Output for one game turn</div>
+      <div class="text">
+        <span class="statement-lineno">A single line</span>: <var>row</var> <var>col</var> — the 0-based coordinates of the cell where you place your orb.
+        <br>
+        You may append a message after the coordinates, e.g. <const>3 5 my message</const>.
+      </div>
+    </div>
+
+    <div class="blk">
+      <div class="title">Constraints</div>
+      Response time first turn is ≤ <const>1000</const> ms.
+      <br>Response time per turn is ≤ <const>100</const> ms.
+    </div>
+  </div>
+
+</div>
