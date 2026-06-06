@@ -1,3 +1,0 @@
-http://localhost:8888/test.html
-Exposed web server dir: D:\ChainReaction\src\main\resources\view
-Exposed web server dir: C:\Users\henri\AppData\Local\Temp\codingame
