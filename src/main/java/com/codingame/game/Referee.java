@@ -51,8 +51,9 @@ public class Referee extends AbstractReferee {
 
     private Board board;
 
-    private Circle[][][] dots;   // dots[r][c][d] – up to 4 dots
-    private Circle[][] glow;     // colored container per cell
+    private Group[][]   cellGroups; // one Group per cell, positioned at cell centre
+    private Circle[][][] dots;      // dots[r][c][d] – up to 4 dots, coords relative to group
+    private Circle[][] glow;        // colored container per cell, coords relative to group
 
     private static final int FLYING_POOL_SIZE = 0;
     private Circle[] flyingOrbs;
@@ -180,6 +181,7 @@ public class Referee extends AbstractReferee {
     }
 
     private void initCellEntities() {
+        cellGroups = new Group[Board.SIZE][Board.SIZE];
         dots = new Circle[Board.SIZE][Board.SIZE][4];
         glow = new Circle[Board.SIZE][Board.SIZE];
 
@@ -188,21 +190,27 @@ public class Referee extends AbstractReferee {
                 int cx = GRID_X + c * CELL + CELL / 2;
                 int cy = GRID_Y + r * CELL + CELL / 2;
 
+                // All child entities positioned at (0,0) relative to the group
                 glow[r][c] = gem.createCircle()
                     .setRadius(38)
-                    .setX(cx).setY(cy)
+                    .setX(0).setY(0)
                     .setFillColor(COL_WHITE).setAlpha(0)
-                    .setLineWidth(0).setZIndex(3);
+                    .setLineWidth(0).setZIndex(0);
 
                 for (int d = 0; d < 4; d++) {
                     dots[r][c][d] = gem.createCircle()
                         .setRadius(DOT_RADIUS)
-                        .setX(cx).setY(cy)
+                        .setX(0).setY(0)
                         .setFillColor(COL_WHITE)
                         .setLineWidth(0)
                         .setScale(0).setAlpha(0)
-                        .setZIndex(5);
+                        .setZIndex(1);
                 }
+
+                cellGroups[r][c] = gem.createGroup(
+                    glow[r][c],
+                    dots[r][c][0], dots[r][c][1], dots[r][c][2], dots[r][c][3]
+                ).setX(cx).setY(cy).setZIndex(3);
             }
         }
 
@@ -235,8 +243,6 @@ public class Referee extends AbstractReferee {
     /** Commit the visual for a cell given explicit state at time t. */
     private void commitCellVisual(int r, int c, int orbs, int owner, double t) {
         double tt = roundToThirdDecimal(t);
-        int cx = GRID_X + c * CELL + CELL / 2;
-        int cy = GRID_Y + r * CELL + CELL / 2;
 
         if (owner == 0 || orbs == 0) {
             glow[r][c].setAlpha(0);
@@ -257,7 +263,7 @@ public class Referee extends AbstractReferee {
         for (int d = 0; d < 4; d++) {
             Circle dot = dots[r][c][d];
             if (d < displayCount) {
-                dot.setX(cx + positions[d][0]).setY(cy + positions[d][1])
+                dot.setX(positions[d][0]).setY(positions[d][1])
                    .setFillColor(COL_WHITE).setScale(1).setAlpha(1);
             } else {
                 dot.setScale(0).setAlpha(0);
@@ -286,14 +292,12 @@ public class Referee extends AbstractReferee {
 
         int displayCount = Math.min(count, DOT_POS.length - 1);
         int[][] positions = DOT_POS[displayCount];
-        int cx = GRID_X + c * CELL + CELL / 2;
-        int cy = GRID_Y + r * CELL + CELL / 2;
 
         glow[r][c].setFillColor(playerColor(owner)).setAlpha(0.85);
         for (int d = 0; d < 4; d++) {
             if (d < displayCount) {
                 dots[r][c][d]
-                    .setX(cx + positions[d][0]).setY(cy + positions[d][1])
+                    .setX(positions[d][0]).setY(positions[d][1])
                     .setFillColor(COL_WHITE).setScale(1).setAlpha(1);
             } else {
                 dots[r][c][d].setScale(0).setAlpha(0);
@@ -305,9 +309,6 @@ public class Referee extends AbstractReferee {
     private void animatePlacementCell(int r, int c, int oldOrbs, int oldOwner,
                                       int newOrbs, int newOwner,
                                       double tAppear, double tSettle) {
-        int cx = GRID_X + c * CELL + CELL / 2;
-        int cy = GRID_Y + r * CELL + CELL / 2;
-
         int displayCount = Math.min(newOrbs, DOT_POS.length - 1);
         int[][] positions = DOT_POS[displayCount];
 
@@ -317,7 +318,7 @@ public class Referee extends AbstractReferee {
         for (int d = 0; d < 4; d++) {
             Circle dot = dots[r][c][d];
             if (d < displayCount) {
-                dot.setX(cx + positions[d][0]).setY(cy + positions[d][1]).setFillColor(COL_WHITE);
+                dot.setX(positions[d][0]).setY(positions[d][1]).setFillColor(COL_WHITE);
                 dot.setScale(0).setAlpha(1);
                 gem.commitEntityState(roundToThirdDecimal(tAppear), dot);
                 dot.setScale(1.2, Curve.EASE_OUT);
