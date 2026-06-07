@@ -2,14 +2,14 @@ read color:word(1)
 
 gameloop
 read redOrbs:int blueOrbs:int
-loop 8 read cells:word(50)
+loop 6 read cells:word(36)
 write action
 
 INPUT
 color: your color (r=red, b=blue)
 redOrbs: total red orbs on the board
 blueOrbs: total blue orbs on the board
-cells: 8 space-separated tokens per row (. or r1-r3 or b1-b3)
+cells: 6 space-separated tokens per row (. or r1-r3 or b1-b3)
 
 OUTPUT
 e.g. 3 5 (place an orb on row 3, column 5)

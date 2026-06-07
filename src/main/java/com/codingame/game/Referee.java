@@ -52,6 +52,7 @@ public class Referee extends AbstractReferee {
     private Board board;
 
     private Circle[][][] dots;   // dots[r][c][d] – up to 4 dots
+    private Circle[][] glow;     // colored container per cell
 
     private static final int FLYING_POOL_SIZE = 0;
     private Circle[] flyingOrbs;
@@ -167,7 +168,7 @@ public class Referee extends AbstractReferee {
                 .setFillColor(color)
                 .setZIndex(3);
 
-            scoreTexts[i] = gem.createText("0 orbs")
+            scoreTexts[i] = gem.createText("0 cells")
                 .setX(x + 10).setY(85)
                 .setAnchor(0.5)
                 .setFontSize(22)
@@ -180,11 +181,18 @@ public class Referee extends AbstractReferee {
 
     private void initCellEntities() {
         dots = new Circle[Board.SIZE][Board.SIZE][4];
+        glow = new Circle[Board.SIZE][Board.SIZE];
 
         for (int r = 0; r < Board.SIZE; r++) {
             for (int c = 0; c < Board.SIZE; c++) {
                 int cx = GRID_X + c * CELL + CELL / 2;
                 int cy = GRID_Y + r * CELL + CELL / 2;
+
+                glow[r][c] = gem.createCircle()
+                    .setRadius(38)
+                    .setX(cx).setY(cy)
+                    .setFillColor(COL_WHITE).setAlpha(0)
+                    .setLineWidth(0).setZIndex(3);
 
                 for (int d = 0; d < 4; d++) {
                     dots[r][c][d] = gem.createCircle()
@@ -212,10 +220,10 @@ public class Referee extends AbstractReferee {
     private void placeStartingOrbs() {
         board.getCell(0, 0).owner = 1;
         board.getCell(0, 0).orbs  = 1;
-        board.getCell(7, 7).owner = 2;
-        board.getCell(7, 7).orbs  = 1;
+        board.getCell(Board.SIZE - 1, Board.SIZE - 1).owner = 2;
+        board.getCell(Board.SIZE - 1, Board.SIZE - 1).orbs  = 1;
         syncCell(0, 0);
-        syncCell(7, 7);
+        syncCell(Board.SIZE - 1, Board.SIZE - 1);
     }
 
     // ── Rendering helpers ───────────────────────────────────────────────────
@@ -226,30 +234,35 @@ public class Referee extends AbstractReferee {
 
     /** Commit the visual for a cell given explicit state at time t. */
     private void commitCellVisual(int r, int c, int orbs, int owner, double t) {
+        double tt = roundToThirdDecimal(t);
         int cx = GRID_X + c * CELL + CELL / 2;
         int cy = GRID_Y + r * CELL + CELL / 2;
 
         if (owner == 0 || orbs == 0) {
+            glow[r][c].setAlpha(0);
+            gem.commitEntityState(tt, glow[r][c]);
             for (int d = 0; d < 4; d++) {
                 dots[r][c][d].setScale(0).setAlpha(0);
-                gem.commitEntityState(t, dots[r][c][d]);
+                gem.commitEntityState(tt, dots[r][c][d]);
             }
             return;
         }
 
         int displayCount = Math.min(orbs, DOT_POS.length - 1);
         int[][] positions = DOT_POS[displayCount];
-        int color = playerColor(owner);
+
+        glow[r][c].setFillColor(playerColor(owner)).setAlpha(0.85);
+        gem.commitEntityState(tt, glow[r][c]);
 
         for (int d = 0; d < 4; d++) {
             Circle dot = dots[r][c][d];
             if (d < displayCount) {
                 dot.setX(cx + positions[d][0]).setY(cy + positions[d][1])
-                   .setFillColor(color).setScale(1).setAlpha(1);
+                   .setFillColor(COL_WHITE).setScale(1).setAlpha(1);
             } else {
                 dot.setScale(0).setAlpha(0);
             }
-            gem.commitEntityState(t, dot);
+            gem.commitEntityState(tt, dot);
         }
     }
 
@@ -266,6 +279,7 @@ public class Referee extends AbstractReferee {
         int count = cell.orbs;
 
         if (owner == 0 || count == 0) {
+            glow[r][c].setAlpha(0);
             for (int d = 0; d < 4; d++) dots[r][c][d].setScale(0).setAlpha(0);
             return;
         }
@@ -274,13 +288,13 @@ public class Referee extends AbstractReferee {
         int[][] positions = DOT_POS[displayCount];
         int cx = GRID_X + c * CELL + CELL / 2;
         int cy = GRID_Y + r * CELL + CELL / 2;
-        int color = playerColor(owner);
 
+        glow[r][c].setFillColor(playerColor(owner)).setAlpha(0.85);
         for (int d = 0; d < 4; d++) {
             if (d < displayCount) {
                 dots[r][c][d]
                     .setX(cx + positions[d][0]).setY(cy + positions[d][1])
-                    .setFillColor(color).setScale(1).setAlpha(1);
+                    .setFillColor(COL_WHITE).setScale(1).setAlpha(1);
             } else {
                 dots[r][c][d].setScale(0).setAlpha(0);
             }
@@ -297,20 +311,22 @@ public class Referee extends AbstractReferee {
         int displayCount = Math.min(newOrbs, DOT_POS.length - 1);
         int[][] positions = DOT_POS[displayCount];
 
-        int color = playerColor(newOwner);
+        glow[r][c].setFillColor(playerColor(newOwner)).setAlpha(0.85, Curve.EASE_IN);
+        gem.commitEntityState(roundToThirdDecimal(tSettle), glow[r][c]);
+
         for (int d = 0; d < 4; d++) {
             Circle dot = dots[r][c][d];
             if (d < displayCount) {
-                dot.setX(cx + positions[d][0]).setY(cy + positions[d][1]).setFillColor(color);
+                dot.setX(cx + positions[d][0]).setY(cy + positions[d][1]).setFillColor(COL_WHITE);
                 dot.setScale(0).setAlpha(1);
-                gem.commitEntityState(tAppear, dot);
+                gem.commitEntityState(roundToThirdDecimal(tAppear), dot);
                 dot.setScale(1.2, Curve.EASE_OUT);
-                gem.commitEntityState(tAppear + (tSettle - tAppear) * 0.6, dot);
+                gem.commitEntityState(roundToThirdDecimal(tAppear + (tSettle - tAppear) * 0.6), dot);
                 dot.setScale(1.0, Curve.EASE_IN);
-                gem.commitEntityState(tSettle, dot);
+                gem.commitEntityState(roundToThirdDecimal(tSettle), dot);
             } else {
                 dot.setScale(0).setAlpha(0);
-                gem.commitEntityState(tSettle, dot);
+                gem.commitEntityState(roundToThirdDecimal(tSettle), dot);
             }
         }
     }
@@ -325,19 +341,28 @@ public class Referee extends AbstractReferee {
         int dstX = GRID_X + toC   * CELL + CELL / 2;
         int dstY = GRID_Y + toR   * CELL + CELL / 2;
         orb.setX(srcX).setY(srcY).setAlpha(0);
-        gem.commitEntityState(Math.max(0.0, tStart - 0.001), orb);
+        gem.commitEntityState(roundToThirdDecimal(Math.max(0.0, tStart - 0.001)), orb);
         orb.setAlpha(1);
-        gem.commitEntityState(tStart, orb);
+        gem.commitEntityState(roundToThirdDecimal(tStart), orb);
         orb.setX(dstX, Curve.EASE_IN_AND_OUT).setY(dstY, Curve.EASE_IN_AND_OUT)
            .setAlpha(0, Curve.EASE_IN);
-        gem.commitEntityState(tEnd, orb);
+        gem.commitEntityState(roundToThirdDecimal(tEnd), orb);
     }
 
     private void updateScores() {
-        scoreTexts[0].setText(board.countOrbs(1) + " orbs");
-        scoreTexts[1].setText(board.countOrbs(2) + " orbs");
-        gem.commitEntityState(1.0, scoreTexts[0]);
-        gem.commitEntityState(1.0, scoreTexts[1]);
+        updateScores(board.countCells(1), board.countCells(2));
+    }
+
+    private void updateScores(int cells1, int cells2) {
+        scoreTexts[0].setText(cells1 + " cells");
+        scoreTexts[1].setText(cells2 + " cells");
+        gem.commitEntityState(roundToThirdDecimal(1.0), scoreTexts[0]);
+        gem.commitEntityState(roundToThirdDecimal(1.0), scoreTexts[1]);
+    }
+
+    /** Round a time value to 3 decimal places to reduce replay data size. */
+    private static double roundToThirdDecimal(double t) {
+        return Math.round(t * 1000) / 1000.0;
     }
 
     // ── Game turn ───────────────────────────────────────────────────────────
@@ -349,15 +374,13 @@ public class Referee extends AbstractReferee {
         // ── Wave animation frame ─────────────────────────────────────────────
         if (!pendingFrames.isEmpty()) {
             WaveFrame wf = pendingFrames.poll();
-            animateWaveFrame(wf);
+            animateWaveFrame(wf);  // updateScores() called inside with intermediate state
 
-            // If this was the last wave, commit final scores and check win
             if (pendingFrames.isEmpty()) {
-                updateScores();
                 if (pendingEndGame) {
                     if (pendingWinnerIdx > 0) {
                         Player winner = gameManager.getPlayer(pendingWinnerIdx - 1);
-                        winner.setScore(board.countOrbs(pendingWinnerIdx));
+                        winner.setScore(board.countCells(pendingWinnerIdx));
                         gameManager.addToGameSummary(winner.getNicknameToken() + " wins!");
                     }
                     gameManager.endGame();
@@ -438,12 +461,12 @@ public class Referee extends AbstractReferee {
             playerMoveCount++;
             if (playerMoveCount >= 2) {
                 int opponent = (playerIdx == 1) ? 2 : 1;
-                if (board.countOrbs(opponent) == 0) {
+                if (board.countCells(opponent) == 0) {
                     pendingWinnerIdx = playerIdx;
                     pendingEndGame   = true;
                     if (pendingFrames.isEmpty()) {
                         Player winner = gameManager.getPlayer(playerIdx - 1);
-                        winner.setScore(board.countOrbs(playerIdx));
+                        winner.setScore(board.countCells(playerIdx));
                         gameManager.addToGameSummary(winner.getNicknameToken() + " wins!");
                         gameManager.endGame();
                     }
@@ -521,7 +544,6 @@ public class Referee extends AbstractReferee {
         }
 
         // Last wave: sync any cell whose final board state differs from afterOrbs
-        // (cells beyond this wave that were already changed by the full chain)
         if (pendingFrames.isEmpty()) {
             for (int r = 0; r < Board.SIZE; r++)
                 for (int c = 0; c < Board.SIZE; c++) {
@@ -530,6 +552,15 @@ public class Referee extends AbstractReferee {
                         syncCellAt(r, c, 1.0);
                 }
         }
+
+        // Score = cells controlled in the intermediate after-state of this wave
+        int cells1 = 0, cells2 = 0;
+        for (int r = 0; r < Board.SIZE; r++)
+            for (int c = 0; c < Board.SIZE; c++) {
+                if (afterOwner[r][c] == 1) cells1++;
+                else if (afterOwner[r][c] == 2) cells2++;
+            }
+        updateScores(cells1, cells2);
     }
 
     // ── Input to bots ────────────────────────────────────────────────────────
@@ -554,6 +585,45 @@ public class Referee extends AbstractReferee {
             }
             player.sendInputLine(sb.toString());
         }
+    }
+
+    // ── End screen ───────────────────────────────────────────────────────────
+
+    @Override
+    public void onEnd() {
+        List<Player> players = gameManager.getPlayers();
+
+        int cells0 = board.countCells(1);
+        int cells1 = board.countCells(2);
+
+        // Ensure scores reflect final cell counts (in case of timeout/invalid action
+        // the score may have been set to -1; preserve that to signal disqualification)
+        if (players.get(0).getScore() >= 0) players.get(0).setScore(cells0);
+        if (players.get(1).getScore() >= 0) players.get(1).setScore(cells1);
+
+        int[] scores = { players.get(0).getScore(), players.get(1).getScore() };
+        String[] text = new String[2];
+
+        if (scores[0] < 0 || scores[1] < 0) {
+            // One player was disqualified
+            text[0] = scores[0] < 0 ? "Disqualified" : "Won " + cells0 + " cells";
+            text[1] = scores[1] < 0 ? "Disqualified" : "Won " + cells1 + " cells";
+        } else if (cells0 > cells1) {
+            text[0] = "Won — " + cells0 + " cells";
+            text[1] = "Lost — " + cells1 + " cells";
+            gameManager.addTooltip(players.get(0),
+                players.get(0).getNicknameToken() + " wins!");
+        } else if (cells1 > cells0) {
+            text[0] = "Lost — " + cells0 + " cells";
+            text[1] = "Won — " + cells1 + " cells";
+            gameManager.addTooltip(players.get(1),
+                players.get(1).getNicknameToken() + " wins!");
+        } else {
+            text[0] = "Draw";
+            text[1] = "Draw";
+        }
+
+        endScreenModule.setScores(scores, text);
     }
 
     // ── Utilities ────────────────────────────────────────────────────────────

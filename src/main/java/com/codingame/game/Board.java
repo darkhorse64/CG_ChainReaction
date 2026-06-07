@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Queue;
 
 public class Board {
-    public static final int SIZE = 8;
+    public static final int SIZE = 6;
 
     /** Critical mass = number of orthogonal neighbours (2 corners, 3 edges, 4 interior). */
     public static int criticalMass(int row, int col) {
@@ -94,10 +94,28 @@ public class Board {
                 }
 
                 if (!wave.isEmpty()) waves.add(wave);
+
+                // Stop chain if opponent has no orbs left — board is conquered
+                boolean opponentAlive = false;
+                int opponent = (playerIdx == 1) ? 2 : 1;
+                outer:
+                for (int r = 0; r < SIZE; r++)
+                    for (int c = 0; c < SIZE; c++)
+                        if (grid[r][c].owner == opponent) { opponentAlive = true; break outer; }
+                if (!opponentAlive) break;
             }
         }
 
         return waves;
+    }
+
+    public int countCells(int playerIdx) {
+        int total = 0;
+        for (int r = 0; r < SIZE; r++)
+            for (int c = 0; c < SIZE; c++)
+                if (grid[r][c].owner == playerIdx)
+                    total++;
+        return total;
     }
 
     public int countOrbs(int playerIdx) {
