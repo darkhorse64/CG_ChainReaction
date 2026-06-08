@@ -1,6 +1,10 @@
 package com.codingame.game;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.codingame.gameengine.core.AbstractPlayer.TimeoutException;
 import com.codingame.gameengine.core.AbstractReferee;
@@ -34,8 +38,11 @@ public class Referee extends AbstractReferee {
     private static final int[][] DOT_POS_1 = {{0, 0}};
     private static final int[][] DOT_POS_2 = {{-18, 0}, {18, 0}};
     private static final int[][] DOT_POS_3 = {{0, -20}, {-18, 14}, {18, 14}};
-    private static final int[][][] DOT_POS = {null, DOT_POS_1, DOT_POS_2, DOT_POS_3};
+    private static final int[][] DOT_POS_4 = {{-15, -15}, {15, -15}, {-15, 15}, {15, 15}};
+    private static final int[][][] DOT_POS = {null, DOT_POS_1, DOT_POS_2, DOT_POS_3, DOT_POS_4};
     private static final int DOT_RADIUS = 10;
+
+    private static final int[][] DIRS = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
 
     @Inject private MultiplayerGameManager<Player> gameManager;
     @Inject private GraphicEntityModule gem;
@@ -44,19 +51,44 @@ public class Referee extends AbstractReferee {
 
     private Board board;
 
-    // Visual entities per cell: 3 dots pre-created, shown/hidden per count
-    private Circle[][][] dots;   // dots[r][c][d] – up to 3 dots
-    private Circle[][] glow;     // outer glow circle per cell
+    private Group[][]   cellGroups; // one Group per cell, positioned at cell centre
+    private Circle[][][] dots;      // dots[r][c][d] – up to 4 dots, coords relative to group
+    private Circle[][] glow;        // colored container per cell, coords relative to group
 
-    // Pool of flying orbs used during explosion animations
     private static final int FLYING_POOL_SIZE = 0;
     private Circle[] flyingOrbs;
     private int flyingOrbIdx;
 
     private int[] playerColors;
     private Text[] scoreTexts;
-    private int turnCount = 0;
     private boolean[] colorSent = {false, false};
+
+    // ── Wave-frame queue ─────────────────────────────────────────────────────
+    /**
+     * One pending animation frame per explosion wave.
+     * Each WaveFrame contains the board state just BEFORE that wave fires,
+     * so we can render intermediate states correctly even though board.play()
+     * has already applied the full chain to the board.
+     */
+    private static class WaveFrame {
+        final List<int[]> wave;
+        final int[][] vOrbs;    // board state at the START of this wave
+        final int[][] vOwner;
+        final int playerIdx;
+
+        WaveFrame(List<int[]> wave, int[][] vOrbs, int[][] vOwner, int playerIdx) {
+            this.wave     = wave;
+            this.vOrbs    = vOrbs;
+            this.vOwner   = vOwner;
+            this.playerIdx = playerIdx;
+        }
+    }
+
+    private final ArrayDeque<WaveFrame> pendingFrames = new ArrayDeque<>();
+    private int  currentPlayerTurn = 0;   // 0 or 1
+    private int  playerMoveCount   = 0;
+    private int  pendingWinnerIdx  = 0;   // set when a win is detected mid-chain
+    private boolean pendingEndGame = false;
 
     // ── Init ────────────────────────────────────────────────────────────────
     @Override
@@ -66,8 +98,9 @@ public class Referee extends AbstractReferee {
             .mapToInt(Player::getColorToken).toArray();
         gameManager.setFirstTurnMaxTime(1000);
         gameManager.setTurnMaxTime(100);
-        gameManager.setMaxTurns(200);
-        gameManager.setFrameDuration(800);
+        // Extra turns budget: 200 player moves × up to 15 wave frames each
+        gameManager.setMaxTurns(200 * 16);
+        gameManager.setFrameDuration(500);
 
         drawBackground();
         drawGrid();
@@ -136,7 +169,7 @@ public class Referee extends AbstractReferee {
                 .setFillColor(color)
                 .setZIndex(3);
 
-            scoreTexts[i] = gem.createText("0 orbs")
+            scoreTexts[i] = gem.createText("0 cells")
                 .setX(x + 10).setY(85)
                 .setAnchor(0.5)
                 .setFontSize(22)
@@ -148,7 +181,8 @@ public class Referee extends AbstractReferee {
     }
 
     private void initCellEntities() {
-        dots = new Circle[Board.SIZE][Board.SIZE][3];
+        cellGroups = new Group[Board.SIZE][Board.SIZE];
+        dots = new Circle[Board.SIZE][Board.SIZE][4];
         glow = new Circle[Board.SIZE][Board.SIZE];
 
         for (int r = 0; r < Board.SIZE; r++) {
@@ -156,21 +190,27 @@ public class Referee extends AbstractReferee {
                 int cx = GRID_X + c * CELL + CELL / 2;
                 int cy = GRID_Y + r * CELL + CELL / 2;
 
+                // All child entities positioned at (0,0) relative to the group
                 glow[r][c] = gem.createCircle()
                     .setRadius(38)
-                    .setX(cx).setY(cy)
+                    .setX(0).setY(0)
                     .setFillColor(COL_WHITE).setAlpha(0)
-                    .setLineWidth(0).setZIndex(3);
+                    .setLineWidth(0).setZIndex(0);
 
-                for (int d = 0; d < 3; d++) {
+                for (int d = 0; d < 4; d++) {
                     dots[r][c][d] = gem.createCircle()
                         .setRadius(DOT_RADIUS)
-                        .setX(cx).setY(cy)
+                        .setX(0).setY(0)
                         .setFillColor(COL_WHITE)
                         .setLineWidth(0)
                         .setScale(0).setAlpha(0)
-                        .setZIndex(5);
+                        .setZIndex(1);
                 }
+
+                cellGroups[r][c] = gem.createGroup(
+                    glow[r][c],
+                    dots[r][c][0], dots[r][c][1], dots[r][c][2], dots[r][c][3]
+                ).setX(cx).setY(cy).setZIndex(3);
             }
         }
 
@@ -188,10 +228,10 @@ public class Referee extends AbstractReferee {
     private void placeStartingOrbs() {
         board.getCell(0, 0).owner = 1;
         board.getCell(0, 0).orbs  = 1;
-        board.getCell(7, 7).owner = 2;
-        board.getCell(7, 7).orbs  = 1;
+        board.getCell(Board.SIZE - 1, Board.SIZE - 1).owner = 2;
+        board.getCell(Board.SIZE - 1, Board.SIZE - 1).orbs  = 1;
         syncCell(0, 0);
-        syncCell(7, 7);
+        syncCell(Board.SIZE - 1, Board.SIZE - 1);
     }
 
     // ── Rendering helpers ───────────────────────────────────────────────────
@@ -200,41 +240,45 @@ public class Referee extends AbstractReferee {
         return playerColors[owner - 1];
     }
 
-    private void syncCellAt(int r, int c, double t) {
-        Cell cell = board.getCell(r, c);
-        int owner = cell.owner;
-        int count = cell.orbs;
-        int cx = GRID_X + c * CELL + CELL / 2;
-        int cy = GRID_Y + r * CELL + CELL / 2;
+    /** Commit the visual for a cell given explicit state at time t. */
+    private void commitCellVisual(int r, int c, int orbs, int owner, double t) {
+        double tt = roundToThirdDecimal(t);
 
-        if (owner == 0 || count == 0) {
+        if (owner == 0 || orbs == 0) {
             glow[r][c].setAlpha(0);
-            gem.commitEntityState(t, glow[r][c]);
-            for (int d = 0; d < 3; d++) {
+            gem.commitEntityState(tt, glow[r][c]);
+            for (int d = 0; d < 4; d++) {
                 dots[r][c][d].setScale(0).setAlpha(0);
-                gem.commitEntityState(t, dots[r][c][d]);
+                gem.commitEntityState(tt, dots[r][c][d]);
             }
             return;
         }
 
-        int displayCount = Math.min(count, DOT_POS.length - 1);
+        int displayCount = Math.min(orbs, DOT_POS.length - 1);
         int[][] positions = DOT_POS[displayCount];
 
         glow[r][c].setFillColor(playerColor(owner)).setAlpha(0.85);
-        gem.commitEntityState(t, glow[r][c]);
+        gem.commitEntityState(tt, glow[r][c]);
 
-        for (int d = 0; d < 3; d++) {
+        for (int d = 0; d < 4; d++) {
             Circle dot = dots[r][c][d];
             if (d < displayCount) {
-                dot.setX(cx + positions[d][0]).setY(cy + positions[d][1])
+                dot.setX(positions[d][0]).setY(positions[d][1])
                    .setFillColor(COL_WHITE).setScale(1).setAlpha(1);
             } else {
                 dot.setScale(0).setAlpha(0);
             }
-            gem.commitEntityState(t, dot);
+            gem.commitEntityState(tt, dot);
         }
     }
 
+    /** Read board state and commit at time t (used for final state sync). */
+    private void syncCellAt(int r, int c, double t) {
+        Cell cell = board.getCell(r, c);
+        commitCellVisual(r, c, cell.orbs, cell.owner, t);
+    }
+
+    /** Set entity properties without committing (used during init). */
     private void syncCell(int r, int c) {
         Cell cell = board.getCell(r, c);
         int owner = cell.owner;
@@ -242,20 +286,18 @@ public class Referee extends AbstractReferee {
 
         if (owner == 0 || count == 0) {
             glow[r][c].setAlpha(0);
-            for (int d = 0; d < 3; d++) dots[r][c][d].setScale(0).setAlpha(0);
+            for (int d = 0; d < 4; d++) dots[r][c][d].setScale(0).setAlpha(0);
             return;
         }
 
         int displayCount = Math.min(count, DOT_POS.length - 1);
         int[][] positions = DOT_POS[displayCount];
-        int cx = GRID_X + c * CELL + CELL / 2;
-        int cy = GRID_Y + r * CELL + CELL / 2;
 
         glow[r][c].setFillColor(playerColor(owner)).setAlpha(0.85);
-        for (int d = 0; d < 3; d++) {
+        for (int d = 0; d < 4; d++) {
             if (d < displayCount) {
                 dots[r][c][d]
-                    .setX(cx + positions[d][0]).setY(cy + positions[d][1])
+                    .setX(positions[d][0]).setY(positions[d][1])
                     .setFillColor(COL_WHITE).setScale(1).setAlpha(1);
             } else {
                 dots[r][c][d].setScale(0).setAlpha(0);
@@ -263,50 +305,34 @@ public class Referee extends AbstractReferee {
         }
     }
 
-    private void animateCellAt(int r, int c, int oldCount, int oldOwner,
-                                double tAppear, double tSettle) {
-        Cell cell = board.getCell(r, c);
-        int owner = cell.owner;
-        int count = cell.orbs;
-        int cx = GRID_X + c * CELL + CELL / 2;
-        int cy = GRID_Y + r * CELL + CELL / 2;
-
-        if (owner == 0 || count == 0) {
-            glow[r][c].setAlpha(0);
-            gem.commitEntityState(tSettle, glow[r][c]);
-            for (int d = 0; d < 3; d++) {
-                dots[r][c][d].setScale(0).setAlpha(0);
-                gem.commitEntityState(tSettle, dots[r][c][d]);
-            }
-            return;
-        }
-
-        int displayCount = Math.min(count, DOT_POS.length - 1);
+    /** Bounce-in animation for a cell (placement). */
+    private void animatePlacementCell(int r, int c, int oldOrbs, int oldOwner,
+                                      int newOrbs, int newOwner,
+                                      double tAppear, double tSettle) {
+        int displayCount = Math.min(newOrbs, DOT_POS.length - 1);
         int[][] positions = DOT_POS[displayCount];
 
-        glow[r][c].setFillColor(playerColor(owner));
-        glow[r][c].setAlpha(0.85, Curve.EASE_IN);
-        gem.commitEntityState(tSettle, glow[r][c]);
+        glow[r][c].setFillColor(playerColor(newOwner)).setAlpha(0.85, Curve.EASE_IN);
+        gem.commitEntityState(roundToThirdDecimal(tSettle), glow[r][c]);
 
-        for (int d = 0; d < 3; d++) {
+        for (int d = 0; d < 4; d++) {
             Circle dot = dots[r][c][d];
             if (d < displayCount) {
-                dot.setX(cx + positions[d][0])
-                   .setY(cy + positions[d][1])
-                   .setFillColor(COL_WHITE);
+                dot.setX(positions[d][0]).setY(positions[d][1]).setFillColor(COL_WHITE);
                 dot.setScale(0).setAlpha(1);
-                gem.commitEntityState(tAppear, dot);
+                gem.commitEntityState(roundToThirdDecimal(tAppear), dot);
                 dot.setScale(1.2, Curve.EASE_OUT);
-                gem.commitEntityState(tAppear + (tSettle - tAppear) * 0.6, dot);
-                dot.setScale(1, Curve.EASE_IN);
-                gem.commitEntityState(tSettle, dot);
+                gem.commitEntityState(roundToThirdDecimal(tAppear + (tSettle - tAppear) * 0.6), dot);
+                dot.setScale(1.0, Curve.EASE_IN);
+                gem.commitEntityState(roundToThirdDecimal(tSettle), dot);
             } else {
                 dot.setScale(0).setAlpha(0);
-                gem.commitEntityState(tSettle, dot);
+                gem.commitEntityState(roundToThirdDecimal(tSettle), dot);
             }
         }
     }
 
+    /** Animate one orb flying from cell (fromR,fromC) to (toR,toC). */
     private void animateFlyingOrb(int fromR, int fromC, int toR, int toC,
                                    double tStart, double tEnd) {
         if (flyingOrbIdx >= FLYING_POOL_SIZE) return;
@@ -316,27 +342,57 @@ public class Referee extends AbstractReferee {
         int dstX = GRID_X + toC   * CELL + CELL / 2;
         int dstY = GRID_Y + toR   * CELL + CELL / 2;
         orb.setX(srcX).setY(srcY).setAlpha(0);
-        gem.commitEntityState(Math.max(0.0, tStart - 0.001), orb);
+        gem.commitEntityState(roundToThirdDecimal(Math.max(0.0, tStart - 0.001)), orb);
         orb.setAlpha(1);
-        gem.commitEntityState(tStart, orb);
-        orb.setX(dstX, Curve.EASE_IN_AND_OUT)
-           .setY(dstY, Curve.EASE_IN_AND_OUT)
+        gem.commitEntityState(roundToThirdDecimal(tStart), orb);
+        orb.setX(dstX, Curve.EASE_IN_AND_OUT).setY(dstY, Curve.EASE_IN_AND_OUT)
            .setAlpha(0, Curve.EASE_IN);
-        gem.commitEntityState(tEnd, orb);
+        gem.commitEntityState(roundToThirdDecimal(tEnd), orb);
     }
 
     private void updateScores() {
-        scoreTexts[0].setText(board.countOrbs(1) + " orbs");
-        scoreTexts[1].setText(board.countOrbs(2) + " orbs");
+        updateScores(board.countCells(1), board.countCells(2));
+    }
+
+    private void updateScores(int cells1, int cells2) {
+        scoreTexts[0].setText(cells1 + " cells");
+        scoreTexts[1].setText(cells2 + " cells");
+        gem.commitEntityState(roundToThirdDecimal(1.0), scoreTexts[0]);
+        gem.commitEntityState(roundToThirdDecimal(1.0), scoreTexts[1]);
+    }
+
+    /** Round a time value to 3 decimal places to reduce replay data size. */
+    private static double roundToThirdDecimal(double t) {
+        return Math.round(t * 1000) / 1000.0;
     }
 
     // ── Game turn ───────────────────────────────────────────────────────────
 
     @Override
     public void gameTurn(int turn) {
-        turnCount++;
-        Player player = gameManager.getPlayer(turn % 2);
-        int playerIdx = player.getIndex() + 1;
+        flyingOrbIdx = 0;
+
+        // ── Wave animation frame ─────────────────────────────────────────────
+        if (!pendingFrames.isEmpty()) {
+            WaveFrame wf = pendingFrames.poll();
+            animateWaveFrame(wf);  // updateScores() called inside with intermediate state
+
+            if (pendingFrames.isEmpty()) {
+                if (pendingEndGame) {
+                    if (pendingWinnerIdx > 0) {
+                        Player winner = gameManager.getPlayer(pendingWinnerIdx - 1);
+                        winner.setScore(board.countCells(pendingWinnerIdx));
+                        gameManager.addToGameSummary(winner.getNicknameToken() + " wins!");
+                    }
+                    gameManager.endGame();
+                }
+            }
+            return;
+        }
+
+        // ── Real player turn ─────────────────────────────────────────────────
+        Player player = gameManager.getPlayer(currentPlayerTurn);
+        int playerIdx = currentPlayerTurn + 1; // 1 or 2
 
         sendGameState(player, playerIdx);
         player.execute();
@@ -355,59 +411,72 @@ public class Referee extends AbstractReferee {
                     snapOrbs[r][c]  = board.getCell(r, c).orbs;
                 }
 
-            List<int[]> explosions = board.play(action.row, action.col, playerIdx);
-            flyingOrbIdx = 0;
+            // Apply move — board is now in final state, waves returned in BFS order
+            List<List<int[]>> waves = board.play(action.row, action.col, playerIdx);
 
-            // t=0.00–0.25 : placement
-            animateCellAt(action.row, action.col,
-                snapOrbs[action.row][action.col],
-                snapOwner[action.row][action.col],
-                0.0, 0.25);
+            // Build virtual state to track intermediate board states for animation
+            int[][] vOrbs  = copyGrid(snapOrbs);
+            int[][] vOwner = copyGrid(snapOwner);
+            vOrbs[action.row][action.col]++;
+            vOwner[action.row][action.col] = playerIdx;
 
-            // t=0.25–0.75 : first few explosions
-            final int MAX_ANIM = 6;
-            int animCount = Math.min(explosions.size(), MAX_ANIM);
-            if (animCount > 0) {
-                double slice = 0.5 / animCount;
-                int[][] dirs = {{-1,0},{1,0},{0,-1},{0,1}};
-                for (int i = 0; i < animCount; i++) {
-                    int er = explosions.get(i)[0];
-                    int ec = explosions.get(i)[1];
-                    double t0   = 0.25 + i * slice;
-                    double tMid = t0 + slice * 0.45;
-                    double t1   = t0 + slice;
-                    animateCellAt(er, ec, snapOrbs[er][ec], snapOwner[er][ec], t0, tMid);
-                    for (int[] d : dirs) {
-                        int nr = er + d[0], nc = ec + d[1];
+            // ── Placement frame (current frame) ──────────────────────────────
+            // Show the orb being placed. If it immediately reaches critical mass,
+            // the cell will display e.g. 2/3/4 orbs — visually "tense" before the
+            // next frame explodes it.
+            animatePlacementCell(
+                action.row, action.col,
+                snapOrbs[action.row][action.col], snapOwner[action.row][action.col],
+                vOrbs[action.row][action.col],    vOwner[action.row][action.col],
+                0.1, 0.6);
+
+            // Commit the final "placed" state at t=1.0 (holds until next frame)
+            commitCellVisual(action.row, action.col,
+                vOrbs[action.row][action.col], vOwner[action.row][action.col], 1.0);
+
+            // ── Queue one WaveFrame per explosion wave ────────────────────────
+            // Pre-compute the virtual board state at the START of each wave.
+            for (List<int[]> wave : waves) {
+                // Take snapshot of vState at start of this wave (before explosion)
+                pendingFrames.add(new WaveFrame(wave, copyGrid(vOrbs), copyGrid(vOwner), playerIdx));
+
+                // Advance vState: cells explode → empty, neighbors receive +1
+                for (int[] exp : wave) {
+                    vOrbs[exp[0]][exp[1]]  = 0;
+                    vOwner[exp[0]][exp[1]] = 0;
+                }
+                for (int[] exp : wave)
+                    for (int[] d : DIRS) {
+                        int nr = exp[0] + d[0], nc = exp[1] + d[1];
                         if (board.isValid(nr, nc)) {
-                            animateFlyingOrb(er, ec, nr, nc, t0, tMid);
-                            animateCellAt(nr, nc, snapOrbs[nr][nc], snapOwner[nr][nc], tMid, t1);
+                            vOrbs[nr][nc]++;
+                            vOwner[nr][nc] = playerIdx;
                         }
                     }
-                }
             }
 
-            // t=1.0 : final state for all changed cells
-            for (int r = 0; r < Board.SIZE; r++)
-                for (int c = 0; c < Board.SIZE; c++) {
-                    Cell cell = board.getCell(r, c);
-                    if (cell.owner != snapOwner[r][c] || cell.orbs != snapOrbs[r][c])
-                        syncCellAt(r, c, 1.0);
-                }
-
+            // Update scores display
             updateScores();
-            gem.commitEntityState(1.0, scoreTexts[0]);
-            gem.commitEntityState(1.0, scoreTexts[1]);
 
-            if (turnCount >= 2) {
+            // ── Win check ────────────────────────────────────────────────────
+            playerMoveCount++;
+            if (playerMoveCount >= 2) {
                 int opponent = (playerIdx == 1) ? 2 : 1;
-                if (board.countOrbs(opponent) == 0) {
-                    player.setScore(board.countOrbs(playerIdx));
-                    gameManager.addToGameSummary(player.getNicknameToken() + " wins!");
-                    gameManager.endGame();
+                if (board.countCells(opponent) == 0) {
+                    pendingWinnerIdx = playerIdx;
+                    pendingEndGame   = true;
+                    if (pendingFrames.isEmpty()) {
+                        Player winner = gameManager.getPlayer(playerIdx - 1);
+                        winner.setScore(board.countCells(playerIdx));
+                        gameManager.addToGameSummary(winner.getNicknameToken() + " wins!");
+                        gameManager.endGame();
+                    }
                     return;
                 }
             }
+
+            // Advance to next player
+            currentPlayerTurn = 1 - currentPlayerTurn;
 
         } catch (TimeoutException e) {
             player.deactivate(player.getNicknameToken() + " timed out!");
@@ -422,6 +491,77 @@ public class Referee extends AbstractReferee {
             player.setScore(-1);
             gameManager.endGame();
         }
+    }
+
+    /**
+     * Animate one explosion wave occupying the full frame (t=0..1).
+     *
+     * Budget: 1 commitCellVisual (= 5 commits) per cell, two time-points total.
+     *   0.40  exploding cells → empty
+     *   0.70  neighbors → new orb count (may show 2/3/4 = "will explode next wave")
+     *
+     * The "about to explode" state is already visible at t=0 because the previous
+     * frame committed it at t=1.0, so no extra commit is needed here.
+     */
+    private void animateWaveFrame(WaveFrame wf) {
+        final double T_EXPLODE = 0.40;
+        final double T_ARRIVE  = 0.70;
+
+        // Collect unique neighbor cells
+        Set<Integer> neighborKeys = new HashSet<>();
+        for (int[] exp : wf.wave)
+            for (int[] d : DIRS) {
+                int nr = exp[0] + d[0], nc = exp[1] + d[1];
+                if (board.isValid(nr, nc))
+                    neighborKeys.add(nr * Board.SIZE + nc);
+            }
+
+        // t=T_EXPLODE: exploding cells go empty
+        for (int[] exp : wf.wave)
+            commitCellVisual(exp[0], exp[1], 0, 0, T_EXPLODE);
+
+        // Compute after-state for neighbors
+        int[][] afterOrbs  = copyGrid(wf.vOrbs);
+        int[][] afterOwner = copyGrid(wf.vOwner);
+        for (int[] exp : wf.wave) {
+            afterOrbs[exp[0]][exp[1]]  = 0;
+            afterOwner[exp[0]][exp[1]] = 0;
+        }
+        for (int[] exp : wf.wave)
+            for (int[] d : DIRS) {
+                int nr = exp[0] + d[0], nc = exp[1] + d[1];
+                if (board.isValid(nr, nc)) {
+                    afterOrbs[nr][nc]++;
+                    afterOwner[nr][nc] = wf.playerIdx;
+                }
+            }
+
+        // t=T_ARRIVE: neighbors show new orb count (1 commit per cell)
+        // If a neighbor reaches critical mass here it will display 2/3/4 dots —
+        // this is the "about to explode" state the next wave frame holds at t=0.
+        for (int key : neighborKeys) {
+            int nr = key / Board.SIZE, nc = key % Board.SIZE;
+            commitCellVisual(nr, nc, afterOrbs[nr][nc], afterOwner[nr][nc], T_ARRIVE);
+        }
+
+        // Last wave: sync any cell whose final board state differs from afterOrbs
+        if (pendingFrames.isEmpty()) {
+            for (int r = 0; r < Board.SIZE; r++)
+                for (int c = 0; c < Board.SIZE; c++) {
+                    Cell cell = board.getCell(r, c);
+                    if (cell.orbs != afterOrbs[r][c] || cell.owner != afterOwner[r][c])
+                        syncCellAt(r, c, 1.0);
+                }
+        }
+
+        // Score = cells controlled in the intermediate after-state of this wave
+        int cells1 = 0, cells2 = 0;
+        for (int r = 0; r < Board.SIZE; r++)
+            for (int c = 0; c < Board.SIZE; c++) {
+                if (afterOwner[r][c] == 1) cells1++;
+                else if (afterOwner[r][c] == 2) cells2++;
+            }
+        updateScores(cells1, cells2);
     }
 
     // ── Input to bots ────────────────────────────────────────────────────────
@@ -446,5 +586,53 @@ public class Referee extends AbstractReferee {
             }
             player.sendInputLine(sb.toString());
         }
+    }
+
+    // ── End screen ───────────────────────────────────────────────────────────
+
+    @Override
+    public void onEnd() {
+        List<Player> players = gameManager.getPlayers();
+
+        int cells0 = board.countCells(1);
+        int cells1 = board.countCells(2);
+
+        // Ensure scores reflect final cell counts (in case of timeout/invalid action
+        // the score may have been set to -1; preserve that to signal disqualification)
+        if (players.get(0).getScore() >= 0) players.get(0).setScore(cells0);
+        if (players.get(1).getScore() >= 0) players.get(1).setScore(cells1);
+
+        int[] scores = { players.get(0).getScore(), players.get(1).getScore() };
+        String[] text = new String[2];
+
+        if (scores[0] < 0 || scores[1] < 0) {
+            // One player was disqualified
+            text[0] = scores[0] < 0 ? "Disqualified" : "Won " + cells0 + " cells";
+            text[1] = scores[1] < 0 ? "Disqualified" : "Won " + cells1 + " cells";
+        } else if (cells0 > cells1) {
+            text[0] = "Won — " + cells0 + " cells";
+            text[1] = "Lost — " + cells1 + " cells";
+            gameManager.addTooltip(players.get(0),
+                players.get(0).getNicknameToken() + " wins!");
+        } else if (cells1 > cells0) {
+            text[0] = "Lost — " + cells0 + " cells";
+            text[1] = "Won — " + cells1 + " cells";
+            gameManager.addTooltip(players.get(1),
+                players.get(1).getNicknameToken() + " wins!");
+        } else {
+            text[0] = "Draw";
+            text[1] = "Draw";
+        }
+
+        endScreenModule.setScores(scores, text);
+    }
+
+    // ── Utilities ────────────────────────────────────────────────────────────
+
+    private static int[][] copyGrid(int[][] src) {
+        int[][] dst = new int[Board.SIZE][Board.SIZE];
+        for (int r = 0; r < Board.SIZE; r++)
+            dst[r] = src[r].clone();
+        return dst;
     }
 }
