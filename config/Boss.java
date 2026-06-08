@@ -1,10 +1,12 @@
-import java.util.Scanner;
+import java.util.*;
+import java.io.*;
+import java.math.*;
 
 /**
  * Boss — greedy strategy: play on own cell closest to critical mass (3 orbs).
  * Reads its assigned color at init and uses it to identify own cells in the grid.
  */
-public class Boss {
+class Player {
     public static void main(String[] args) {
         Scanner in = new Scanner(System.in);
         String myColor = in.nextLine().trim(); // "r" or "b"
@@ -12,8 +14,8 @@ public class Boss {
         while (true) {
             String[][] grid = new String[8][8];
             for (int r = 0; r < 8; r++) {
-                String[] tokens = in.nextLine().trim().split(" ");
-                for (int c = 0; c < 8; c++) grid[r][c] = tokens[c];
+                String line = in.nextLine().trim();
+                for (int c = 0; c < 8; c++) grid[r][c] = line.substring(c * 2, c * 2 + 2);
             }
 
             int bestR = -1, bestC = -1, bestScore = -1;

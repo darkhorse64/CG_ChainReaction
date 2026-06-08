@@ -84,8 +84,9 @@
     <div class="blk">
       <div class="title">Entrées pour un tour</div>
       <div class="text">
-        <span class="statement-lineno"><const>8</const> lignes</span> : <const>8</const> tokens séparés par des espaces <var>cells</var>, un par case, ligne <const>0</const> en premier.
-        Chaque token vaut <const>.</const> (vide), <const>r1</const>–<const>r3</const> (case rouge avec 1–3 orbes), ou <const>b1</const>–<const>b3</const> (case bleue avec 1–3 orbes).
+        <span class="statement-lineno"><const>8</const> lignes</span> : une chaîne de <const>16</const> caractères <var>cells</var>, encodant toute la ligne avec <const>2</const> caractères par case, ligne <const>0</const> en premier.
+        Chaque token de 2 caractères vaut <const>..</const> (vide), <const>r1</const>–<const>r3</const> (case rouge avec 1–3 orbes), ou <const>b1</const>–<const>b3</const> (case bleue avec 1–3 orbes).
+        La case de colonne <var>c</var> se trouve aux caractères <var>2c</var> et <var>2c+1</var>.
       </div>
     </div>
 

@@ -1,12 +1,12 @@
 read color:word(1)
 
 gameloop
-loop 8 read cells:word(50)
+loop 8 read cells:string(16)
 write random
 
 INPUT
 color: your color (r=red, b=blue)
-cells: 8 space-separated tokens per row (. or r1-r3 or b1-b3)
+cells: 16-char string, 2 chars per cell — ".." (empty), "r1"-"r3" (red), "b1"-"b3" (blue)
 
 OUTPUT
 e.g. 3 5 (place an orb on row 3, column 5)

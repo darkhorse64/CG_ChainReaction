@@ -623,9 +623,8 @@ public class Referee extends AbstractReferee {
         for (int r = 0; r < Board.SIZE; r++) {
             StringBuilder sb = new StringBuilder();
             for (int c = 0; c < Board.SIZE; c++) {
-                if (c > 0) sb.append(' ');
                 Cell cell = board.getCell(r, c);
-                if (cell.owner == 0)      sb.append('.');
+                if (cell.owner == 0)      sb.append("..");
                 else if (cell.owner == 1) sb.append('r').append(cell.orbs);
                 else                      sb.append('b').append(cell.orbs);
             }
@@ -674,13 +673,13 @@ public class Referee extends AbstractReferee {
 
     // ── Utilities ────────────────────────────────────────────────────────────
 
-    /** Pick a random valid cell for playerIdx (own cell or empty). */
+    /** Pick a random valid cell for playerIdx. */
     private Action randomAction(Player player, int playerIdx) {
         List<int[]> valid = new ArrayList<>();
         for (int r = 0; r < Board.SIZE; r++)
             for (int c = 0; c < Board.SIZE; c++) {
                 int owner = board.getCell(r, c).owner;
-                if (owner == playerIdx || owner == 0)
+                if (owner == playerIdx)
                     valid.add(new int[]{r, c});
             }
         int[] pick = valid.get(random.nextInt(valid.size()));

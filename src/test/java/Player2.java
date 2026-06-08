@@ -12,9 +12,9 @@ public class Player2 {
         while (true) {
             int pickR = -1, pickC = -1;
             for (int r = 0; r < 8; r++) {
-                String[] tokens = in.nextLine().trim().split(" ");
+                String line = in.nextLine().trim();
                 for (int c = 0; c < 8; c++) {
-                    if (tokens[c].startsWith(myColor) && pickR == -1) {
+                    if (line.substring(c * 2, c * 2 + 2).startsWith(myColor) && pickR == -1) {
                         pickR = r; pickC = c;
                     }
                 }

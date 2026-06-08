@@ -12,8 +12,8 @@ public class Player1 {
         while (true) {
             String[][] grid = new String[8][8];
             for (int r = 0; r < 8; r++) {
-                String[] tokens = in.nextLine().trim().split(" ");
-                for (int c = 0; c < 8; c++) grid[r][c] = tokens[c];
+                String line = in.nextLine().trim();
+                for (int c = 0; c < 8; c++) grid[r][c] = line.substring(c * 2, c * 2 + 2);
             }
 
             int bestR = -1, bestC = -1, bestScore = -1;
