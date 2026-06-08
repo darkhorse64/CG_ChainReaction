@@ -62,6 +62,7 @@ public class Referee extends AbstractReferee {
 
     private int[] playerColors;
     private Text[] scoreTexts;
+    private Text[] messageTexts;
     private boolean[] colorSent = {false, false};
     private Random random;
 
@@ -143,7 +144,8 @@ public class Referee extends AbstractReferee {
     }
 
     private void drawHud() {
-        scoreTexts = new Text[2];
+        scoreTexts  = new Text[2];
+        messageTexts = new Text[2];
         List<Player> players = gameManager.getPlayers();
         int[] xs = {200, SCREEN_W - 200};
 
@@ -153,7 +155,7 @@ public class Referee extends AbstractReferee {
             int color = playerColors[i];
 
             gem.createRectangle()
-                .setWidth(300).setHeight(90)
+                .setWidth(300).setHeight(115)
                 .setX(x - 150).setY(30)
                 .setFillColor(color).setAlpha(0.15)
                 .setLineColor(color).setLineWidth(2)
@@ -178,6 +180,14 @@ public class Referee extends AbstractReferee {
                 .setAnchor(0.5)
                 .setFontSize(22)
                 .setFillColor(COL_WHITE)
+                .setZIndex(3);
+
+            messageTexts[i] = gem.createText("")
+                .setX(x).setY(122)
+                .setAnchor(0.5)
+                .setFontSize(18)
+                .setFillColor(COL_WHITE)
+                .setAlpha(0.85)
                 .setZIndex(3);
 
             p.hud = gem.createGroup();
@@ -404,11 +414,23 @@ public class Referee extends AbstractReferee {
         try {
             Action action;
             String rawOutput = player.getOutputs().get(0).trim();
+            String playerMessage = "";
             if (rawOutput.equalsIgnoreCase("random")) {
                 action = randomAction(player, playerIdx);
             } else {
                 action = player.getAction();
+                String[] parts = rawOutput.split("\\s+", 3);
+                if (parts.length >= 3) playerMessage = parts[2];
             }
+
+            // Update message in HUD: show current player's message, clear opponent's
+            int hudIdx = currentPlayerTurn;
+            String displayMessage = playerMessage.length() > 20
+                ? playerMessage.substring(0, 20) : playerMessage;
+            messageTexts[hudIdx].setText(displayMessage);
+            gem.commitEntityState(0.0, messageTexts[hudIdx]);
+            messageTexts[1 - hudIdx].setText("");
+            gem.commitEntityState(0.0, messageTexts[1 - hudIdx]);
 
             // Snapshot before move
             int[][] snapOwner = new int[Board.SIZE][Board.SIZE];
