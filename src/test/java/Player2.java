@@ -13,9 +13,9 @@ public class Player2 {
             in.nextLine(); // redOrbs blueOrbs
 
             int pickR = -1, pickC = -1;
-            for (int r = 0; r < 6; r++) {
+            for (int r = 0; r < 8; r++) {
                 String[] tokens = in.nextLine().trim().split(" ");
-                for (int c = 0; c < 6; c++) {
+                for (int c = 0; c < 8; c++) {
                     if (tokens[c].startsWith(myColor) && pickR == -1) {
                         pickR = r; pickC = c;
                     }

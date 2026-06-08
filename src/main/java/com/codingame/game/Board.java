@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Queue;
 
 public class Board {
-    public static final int SIZE = 6;
+    public static final int SIZE = 8;
 
     /** Critical mass = number of orthogonal neighbours (2 corners, 3 edges, 4 interior). */
     public static int criticalMass(int row, int col) {
