@@ -4,6 +4,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 import com.codingame.gameengine.core.AbstractPlayer.TimeoutException;
@@ -62,6 +63,7 @@ public class Referee extends AbstractReferee {
     private int[] playerColors;
     private Text[] scoreTexts;
     private boolean[] colorSent = {false, false};
+    private Random random;
 
     // ── Wave-frame queue ─────────────────────────────────────────────────────
     /**
@@ -101,6 +103,8 @@ public class Referee extends AbstractReferee {
         // Extra turns budget: 200 player moves × up to 15 wave frames each
         gameManager.setMaxTurns(200 * 16);
         gameManager.setFrameDuration(500);
+
+        random = new Random(gameManager.getSeed());
 
         drawBackground();
         drawGrid();
@@ -398,9 +402,17 @@ public class Referee extends AbstractReferee {
         player.execute();
 
         try {
-            Action action = player.getAction();
-            gameManager.addToGameSummary(String.format(
-                "%s plays (%d %d)", player.getNicknameToken(), action.row, action.col));
+            Action action;
+            String rawOutput = player.getOutputs().get(0).trim();
+            if (rawOutput.equalsIgnoreCase("random")) {
+                action = randomAction(player, playerIdx);
+                gameManager.addToGameSummary(String.format(
+                    "%s plays random → (%d %d)", player.getNicknameToken(), action.row, action.col));
+            } else {
+                action = player.getAction();
+                gameManager.addToGameSummary(String.format(
+                    "%s plays (%d %d)", player.getNicknameToken(), action.row, action.col));
+            }
 
             // Snapshot before move
             int[][] snapOwner = new int[Board.SIZE][Board.SIZE];
@@ -573,8 +585,6 @@ public class Referee extends AbstractReferee {
             colorSent[pIdx] = true;
         }
 
-        player.sendInputLine(board.countOrbs(1) + " " + board.countOrbs(2));
-
         for (int r = 0; r < Board.SIZE; r++) {
             StringBuilder sb = new StringBuilder();
             for (int c = 0; c < Board.SIZE; c++) {
@@ -628,6 +638,19 @@ public class Referee extends AbstractReferee {
     }
 
     // ── Utilities ────────────────────────────────────────────────────────────
+
+    /** Pick a random valid cell for playerIdx (own cell or empty). */
+    private Action randomAction(Player player, int playerIdx) {
+        List<int[]> valid = new ArrayList<>();
+        for (int r = 0; r < Board.SIZE; r++)
+            for (int c = 0; c < Board.SIZE; c++) {
+                int owner = board.getCell(r, c).owner;
+                if (owner == playerIdx || owner == 0)
+                    valid.add(new int[]{r, c});
+            }
+        int[] pick = valid.get(random.nextInt(valid.size()));
+        return new Action(player, pick[0], pick[1]);
+    }
 
     private static int[][] copyGrid(int[][] src) {
         int[][] dst = new int[Board.SIZE][Board.SIZE];

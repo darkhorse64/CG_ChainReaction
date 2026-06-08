@@ -35,7 +35,7 @@
       <span>Expert Rules</span>
     </h1>
     <div class="statement-expert-rules-content">
-      The game ends after <const>200</const> turns; the player with the most orbs wins. In case of a tie, no winner is declared.
+      The game ends after <const>200</const> turns if no player has conquered the entire board. In that case the game is a draw.
     </div>
   </div>
 
@@ -46,8 +46,7 @@
       <div class="title">Victory Conditions</div>
       <div class="text">
         <ul style="padding-bottom:0">
-          <li>All orbs on the board belong to you.</li>
-          <li>You have more orbs than your opponent when the game ends.</li>
+          <li>All cells on the board belong to you.</li>
         </ul>
       </div>
     </div>
@@ -60,7 +59,7 @@
       <div class="title">Loss Conditions</div>
       <div class="text">
         <ul style="padding-bottom:0">
-          <li>You have no orbs left on the board.</li>
+          <li>You have no cells left on the board.</li>
           <li>You play on a cell that does not belong to you.</li>
           <li>You do not respond in time or output an invalid move.</li>
         </ul>
@@ -85,9 +84,7 @@
     <div class="blk">
       <div class="title">Input for one game turn</div>
       <div class="text">
-        <span class="statement-lineno">First line</span>: two integers <var>redOrbs</var> and <var>blueOrbs</var>, the total orb counts for each color.
-        <br>
-        <span class="statement-lineno">Next <const>8</const> lines</span>: <const>8</const> space-separated tokens <var>cells</var>, one per cell, row <const>0</const> first.
+        <span class="statement-lineno"><const>8</const> lines</span>: <const>8</const> space-separated tokens <var>cells</var>, one per cell, row <const>0</const> first.
         Each token is <const>.</const> (empty), <const>r1</const>–<const>r3</const> (red cell with 1–3 orbs), or <const>b1</const>–<const>b3</const> (blue cell with 1–3 orbs).
       </div>
     </div>
@@ -97,7 +94,9 @@
       <div class="text">
         <span class="statement-lineno">A single line</span>: <var>row</var> <var>col</var> — the 0-based coordinates of the cell where you place your orb.
         <br>
-        You may append a message after the coordinates, e.g. <const>3 5 my message</const>.
+        You may append a message after the coordinates, e.g. <const>3 5 message</const>.
+        <br>
+        You may also send <const>random</const> to let the referee play a random valid move on your behalf.
       </div>
     </div>
 

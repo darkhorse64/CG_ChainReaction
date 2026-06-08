@@ -35,7 +35,7 @@
       <span>Règles avancées</span>
     </h1>
     <div class="statement-expert-rules-content">
-      La partie se termine après <const>200</const> tours ; le joueur ayant le plus d'orbes gagne. En cas d'égalité, aucun vainqueur n'est désigné.
+      La partie se termine après <const>200</const> tours si aucun joueur n'a conquis toutes les cases. Dans ce cas, la partie est nulle.
     </div>
   </div>
 
@@ -46,8 +46,7 @@
       <div class="title">Conditions de victoire</div>
       <div class="text">
         <ul style="padding-bottom:0">
-          <li>Toutes les orbes du plateau vous appartiennent.</li>
-          <li>Vous avez plus d'orbes que votre adversaire en fin de partie.</li>
+          <li>Toutes les cases du plateau vous appartiennent.</li>
         </ul>
       </div>
     </div>
@@ -60,7 +59,7 @@
       <div class="title">Conditions de défaite</div>
       <div class="text">
         <ul style="padding-bottom:0">
-          <li>Vous n'avez plus aucune orbe sur le plateau.</li>
+          <li>Vous n'avez plus aucune case sur le plateau.</li>
           <li>Vous jouez sur une case qui ne vous appartient pas.</li>
           <li>Vous ne répondez pas dans les délais ou envoyez un coup invalide.</li>
         </ul>
@@ -85,9 +84,7 @@
     <div class="blk">
       <div class="title">Entrées pour un tour</div>
       <div class="text">
-        <span class="statement-lineno">Première ligne</span> : deux entiers <var>redOrbs</var> et <var>blueOrbs</var>, le nombre total d'orbes de chaque couleur.
-        <br>
-        <span class="statement-lineno"><const>8</const> lignes suivantes</span> : <const>8</const> tokens séparés par des espaces <var>cells</var>, un par case, ligne <const>0</const> en premier.
+        <span class="statement-lineno"><const>8</const> lignes</span> : <const>8</const> tokens séparés par des espaces <var>cells</var>, un par case, ligne <const>0</const> en premier.
         Chaque token vaut <const>.</const> (vide), <const>r1</const>–<const>r3</const> (case rouge avec 1–3 orbes), ou <const>b1</const>–<const>b3</const> (case bleue avec 1–3 orbes).
       </div>
     </div>
@@ -98,6 +95,8 @@
         <span class="statement-lineno">Une ligne</span> : <var>row</var> <var>col</var> — les coordonnées (base 0) de la case où vous posez votre orbe.
         <br>
         Vous pouvez ajouter un message après les coordonnées, e.g. <const>3 5 mon message</const>.
+        <br>
+        Vous pouvez aussi envoyer <const>random</const> pour que l'arbitre joue un coup aléatoire à votre place parmi les coups valides.
       </div>
     </div>
 

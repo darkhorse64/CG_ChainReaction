@@ -10,8 +10,6 @@ public class Boss {
         String myColor = in.nextLine().trim(); // "r" or "b"
 
         while (true) {
-            in.nextLine(); // redOrbs blueOrbs
-
             String[][] grid = new String[8][8];
             for (int r = 0; r < 8; r++) {
                 String[] tokens = in.nextLine().trim().split(" ");
