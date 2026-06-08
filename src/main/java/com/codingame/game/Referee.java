@@ -406,12 +406,8 @@ public class Referee extends AbstractReferee {
             String rawOutput = player.getOutputs().get(0).trim();
             if (rawOutput.equalsIgnoreCase("random")) {
                 action = randomAction(player, playerIdx);
-                gameManager.addToGameSummary(String.format(
-                    "%s plays random → (%d %d)", player.getNicknameToken(), action.row, action.col));
             } else {
                 action = player.getAction();
-                gameManager.addToGameSummary(String.format(
-                    "%s plays (%d %d)", player.getNicknameToken(), action.row, action.col));
             }
 
             // Snapshot before move
@@ -425,6 +421,16 @@ public class Referee extends AbstractReferee {
 
             // Apply move — board is now in final state, waves returned in BFS order
             List<List<int[]>> waves = board.play(action.row, action.col, playerIdx);
+
+            // Game summary
+            String randomTag = rawOutput.equalsIgnoreCase("random") ? " random →" : "";
+            int waveCount = waves.size();
+            String explosionTag = waveCount > 0
+                ? String.format(" and triggered %d explosion wave(s)", waveCount)
+                : "";
+            gameManager.addToGameSummary(String.format(
+                "%s plays%s (%d %d)%s",
+                player.getNicknameToken(), randomTag, action.row, action.col, explosionTag));
 
             // Build virtual state to track intermediate board states for animation
             int[][] vOrbs  = copyGrid(snapOrbs);
@@ -467,8 +473,15 @@ public class Referee extends AbstractReferee {
                     }
             }
 
-            // Update scores display
-            updateScores();
+            // Update scores display — use pre-explosion snapshot so the placement
+            // frame shows the score before any chain reaction fires.
+            int snapCells1 = 0, snapCells2 = 0;
+            for (int r = 0; r < Board.SIZE; r++)
+                for (int c = 0; c < Board.SIZE; c++) {
+                    if (snapOwner[r][c] == 1) snapCells1++;
+                    else if (snapOwner[r][c] == 2) snapCells2++;
+                }
+            updateScores(snapCells1, snapCells2);
 
             // ── Win check ────────────────────────────────────────────────────
             playerMoveCount++;
