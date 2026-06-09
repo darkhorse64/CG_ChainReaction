@@ -56,7 +56,7 @@ public class Referee extends AbstractReferee {
     private Circle[][][] dots;      // dots[r][c][d] – up to 4 dots, coords relative to group
     private Circle[][] glow;        // colored container per cell, coords relative to group
 
-    private static final int FLYING_POOL_SIZE = 0;
+    private static final int FLYING_POOL_SIZE = 32;
     private Circle[] flyingOrbs;
     private int flyingOrbIdx;
 
@@ -564,9 +564,21 @@ public class Referee extends AbstractReferee {
                     neighborKeys.add(nr * Board.SIZE + nc);
             }
 
-        // t=T_EXPLODE: exploding cells go empty
-        for (int[] exp : wf.wave)
-            commitCellVisual(exp[0], exp[1], 0, 0, T_EXPLODE);
+        // t=T_EXPLODE: dots vanish instantly, orbs fly to neighbours
+        // t=T_ARRIVE:  glow fades out while orbs are in flight
+        for (int[] exp : wf.wave) {
+            for (int d = 0; d < 4; d++) {
+                dots[exp[0]][exp[1]][d].setRadius(0).setAlpha(0);
+                gem.commitEntityState(T_EXPLODE, dots[exp[0]][exp[1]][d]);
+            }
+            glow[exp[0]][exp[1]].setAlpha(0, Curve.EASE_IN);
+            gem.commitEntityState(T_ARRIVE, glow[exp[0]][exp[1]]);
+            for (int[] d : DIRS) {
+                int nr = exp[0] + d[0], nc = exp[1] + d[1];
+                if (board.isValid(nr, nc))
+                    animateFlyingOrb(exp[0], exp[1], nr, nc, T_EXPLODE, T_ARRIVE);
+            }
+        }
 
         // Compute after-state for neighbors
         int[][] afterOrbs  = copyGrid(wf.vOrbs);
