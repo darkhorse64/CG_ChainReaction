@@ -64,6 +64,7 @@ public class Referee extends AbstractReferee {
     private Text[] scoreTexts;
     private Text[] messageTexts;
     private boolean[] colorSent = {false, false};
+    private int[][] lastMove = {null, null}; // lastMove[playerIdx-1] = {row, col}
     private Random random;
 
     // ── Wave-frame queue ─────────────────────────────────────────────────────
@@ -442,6 +443,7 @@ public class Referee extends AbstractReferee {
 
             // Apply move — board is now in final state, waves returned in BFS order
             List<List<int[]>> waves = board.play(action.row, action.col, playerIdx);
+            lastMove[currentPlayerTurn] = new int[]{action.row, action.col};
 
             // Game summary
             String randomTag = rawOutput.equalsIgnoreCase("random") ? " random →" : "";
@@ -450,8 +452,8 @@ public class Referee extends AbstractReferee {
                 ? String.format(" and triggered %d explosion wave(s)", waveCount)
                 : "";
             gameManager.addToGameSummary(String.format(
-                "%s plays%s (%d %d)%s",
-                player.getNicknameToken(), randomTag, action.row, action.col, explosionTag));
+                "At game turn %d, %s played%s (%d %d)%s",
+                playerMoveCount + 1, player.getNicknameToken(), randomTag, action.row, action.col, explosionTag));
 
             // Build virtual state to track intermediate board states for animation
             int[][] vOrbs  = copyGrid(snapOrbs);
@@ -617,6 +619,13 @@ public class Referee extends AbstractReferee {
         if (!colorSent[pIdx]) {
             player.sendInputLine(playerIdx == 1 ? "r" : "b");
             colorSent[pIdx] = true;
+        }
+
+        int[] opponentMove = lastMove[1 - pIdx];
+        if (opponentMove == null) {
+            player.sendInputLine("null");
+        } else {
+            player.sendInputLine(opponentMove[0] + " " + opponentMove[1]);
         }
 
         for (int r = 0; r < Board.SIZE; r++) {

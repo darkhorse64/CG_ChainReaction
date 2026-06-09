@@ -12,6 +12,7 @@ class Player {
         String myColor = in.nextLine().trim(); // "r" or "b"
 
         while (true) {
+            String lastMove = in.nextLine().trim(); // "row col" or "null"
             String[][] grid = new String[8][8];
             for (int r = 0; r < 8; r++) {
                 String line = in.nextLine().trim();
