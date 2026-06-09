@@ -213,11 +213,10 @@ public class Referee extends AbstractReferee {
 
                 for (int d = 0; d < 4; d++) {
                     dots[r][c][d] = gem.createCircle()
-                        .setRadius(DOT_RADIUS)
                         .setX(0).setY(0)
                         .setFillColor(COL_WHITE)
                         .setLineWidth(0)
-                        .setScale(0).setAlpha(0)
+                        .setRadius(0).setAlpha(0)
                         .setZIndex(1);
                 }
 
@@ -262,7 +261,7 @@ public class Referee extends AbstractReferee {
             glow[r][c].setAlpha(0);
             gem.commitEntityState(tt, glow[r][c]);
             for (int d = 0; d < 4; d++) {
-                dots[r][c][d].setScale(0).setAlpha(0);
+                dots[r][c][d].setRadius(0).setAlpha(0);
                 gem.commitEntityState(tt, dots[r][c][d]);
             }
             return;
@@ -278,9 +277,9 @@ public class Referee extends AbstractReferee {
             Circle dot = dots[r][c][d];
             if (d < displayCount) {
                 dot.setX(positions[d][0]).setY(positions[d][1])
-                   .setFillColor(COL_WHITE).setScale(1).setAlpha(1);
+                   .setFillColor(COL_WHITE).setRadius(DOT_RADIUS).setAlpha(1);
             } else {
-                dot.setScale(0).setAlpha(0);
+                dot.setRadius(0).setAlpha(0);
             }
             gem.commitEntityState(tt, dot);
         }
@@ -300,7 +299,7 @@ public class Referee extends AbstractReferee {
 
         if (owner == 0 || count == 0) {
             glow[r][c].setAlpha(0);
-            for (int d = 0; d < 4; d++) dots[r][c][d].setScale(0).setAlpha(0);
+            for (int d = 0; d < 4; d++) dots[r][c][d].setRadius(0).setAlpha(0);
             return;
         }
 
@@ -312,9 +311,9 @@ public class Referee extends AbstractReferee {
             if (d < displayCount) {
                 dots[r][c][d]
                     .setX(positions[d][0]).setY(positions[d][1])
-                    .setFillColor(COL_WHITE).setScale(1).setAlpha(1);
+                    .setFillColor(COL_WHITE).setRadius(DOT_RADIUS).setAlpha(1);
             } else {
-                dots[r][c][d].setScale(0).setAlpha(0);
+                dots[r][c][d].setRadius(0).setAlpha(0);
             }
         }
     }
@@ -333,14 +332,14 @@ public class Referee extends AbstractReferee {
             Circle dot = dots[r][c][d];
             if (d < displayCount) {
                 dot.setX(positions[d][0]).setY(positions[d][1]).setFillColor(COL_WHITE);
-                dot.setScale(0).setAlpha(1);
+                dot.setRadius(0).setAlpha(1);
                 gem.commitEntityState(roundToThirdDecimal(tAppear), dot);
-                dot.setScale(1.2, Curve.EASE_OUT);
+                dot.setRadius((int)(DOT_RADIUS * 1.2), Curve.EASE_OUT);
                 gem.commitEntityState(roundToThirdDecimal(tAppear + (tSettle - tAppear) * 0.6), dot);
-                dot.setScale(1.0, Curve.EASE_IN);
+                dot.setRadius(DOT_RADIUS, Curve.EASE_IN);
                 gem.commitEntityState(roundToThirdDecimal(tSettle), dot);
             } else {
-                dot.setScale(0).setAlpha(0);
+                dot.setRadius(0).setAlpha(0);
                 gem.commitEntityState(roundToThirdDecimal(tSettle), dot);
             }
         }
