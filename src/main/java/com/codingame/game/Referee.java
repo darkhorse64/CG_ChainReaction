@@ -15,6 +15,7 @@ import com.codingame.gameengine.module.entities.Circle;
 import com.codingame.gameengine.module.entities.Curve;
 import com.codingame.gameengine.module.entities.GraphicEntityModule;
 import com.codingame.gameengine.module.entities.Group;
+import com.codingame.gameengine.module.entities.Rectangle;
 import com.codingame.gameengine.module.entities.Sprite;
 import com.codingame.gameengine.module.entities.Text;
 import com.codingame.gameengine.module.toggle.ToggleModule;
@@ -32,7 +33,7 @@ public class Referee extends AbstractReferee {
 
     // ── Colours ─────────────────────────────────────────────────────────────
     private static final int COL_BG    = 0x0d0d1a;
-    private static final int COL_GRID  = 0x1e1e3a;
+    private static final int COL_GRID  = 0x3a3a6a;
     private static final int COL_WHITE = 0xFFFFFF;
 
     // ── Dot offsets (relative to cell centre) ───────────────────────────────
@@ -61,6 +62,7 @@ public class Referee extends AbstractReferee {
     private int flyingOrbIdx;
 
     private int[] playerColors;
+    private Rectangle[] hudBg;
     private Text[] scoreTexts;
     private Text[] messageTexts;
     private boolean[] colorSent = {false, false};
@@ -131,7 +133,7 @@ public class Referee extends AbstractReferee {
             gem.createLine()
                 .setX(GRID_X).setY(y)
                 .setX2(GRID_X + total).setY2(y)
-                .setLineColor(COL_GRID).setLineWidth(2)
+                .setLineColor(COL_GRID).setLineWidth(3)
                 .setZIndex(1);
         }
         for (int i = 0; i <= Board.SIZE; i++) {
@@ -139,7 +141,7 @@ public class Referee extends AbstractReferee {
             gem.createLine()
                 .setX(x).setY(GRID_Y)
                 .setX2(x).setY2(GRID_Y + total)
-                .setLineColor(COL_GRID).setLineWidth(2)
+                .setLineColor(COL_GRID).setLineWidth(3)
                 .setZIndex(1);
         }
     }
@@ -147,6 +149,7 @@ public class Referee extends AbstractReferee {
     private void drawHud() {
         scoreTexts  = new Text[2];
         messageTexts = new Text[2];
+        hudBg = new Rectangle[2];
         List<Player> players = gameManager.getPlayers();
         int[] xs = {200, SCREEN_W - 200};
 
@@ -155,10 +158,10 @@ public class Referee extends AbstractReferee {
             int x = xs[i];
             int color = playerColors[i];
 
-            gem.createRectangle()
+            hudBg[i] = gem.createRectangle()
                 .setWidth(300).setHeight(115)
                 .setX(x - 150).setY(30)
-                .setFillColor(color).setAlpha(0.15)
+                .setFillColor(color).setAlpha(i == 0 ? 0.40 : 0.10)
                 .setLineColor(color).setLineWidth(2)
                 .setZIndex(2);
 
@@ -407,6 +410,11 @@ public class Referee extends AbstractReferee {
         // ── Real player turn ─────────────────────────────────────────────────
         Player player = gameManager.getPlayer(currentPlayerTurn);
         int playerIdx = currentPlayerTurn + 1; // 1 or 2
+
+        hudBg[currentPlayerTurn].setAlpha(0.40);
+        gem.commitEntityState(0.0, hudBg[currentPlayerTurn]);
+        hudBg[1 - currentPlayerTurn].setAlpha(0.10);
+        gem.commitEntityState(0.0, hudBg[1 - currentPlayerTurn]);
 
         sendGameState(player, playerIdx);
         player.execute();
