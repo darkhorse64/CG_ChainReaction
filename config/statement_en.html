@@ -11,14 +11,14 @@
       <span>Rules</span>
     </h1>
     <div class="statement-rules-content">
-      The game is played on an <const>8×8</const> grid. Rows are numbered <const>0–7</const> top to bottom, columns <const>0–7</const> left to right.
+      The game is played on a <const>6×6</const> grid. Rows are numbered <const>0–5</const> top to bottom, columns <const>0–5</const> left to right.
       <br><br>
-      The game starts with <strong>one red orb at the top-left corner (0,0)</strong> and <strong>one blue orb at the bottom-right corner (7,7)</strong>.
+      The board starts empty.
       <br><br>
       <strong>Placing an orb</strong>
       <ul>
-        <li>On your turn, choose a cell that <strong>already belongs to you</strong> and add one orb to it.</li>
-        <li>You cannot play on an empty cell or a cell owned by your opponent.</li>
+        <li>On your turn, choose any cell that is either <strong>empty</strong> or <strong>already belongs to you</strong>, and add one orb to it.</li>
+        <li>You cannot play on a cell owned by your opponent.</li>
       </ul>
       <strong>Critical mass &amp; explosions</strong>
       <ul>
@@ -87,7 +87,7 @@
       <div class="text">
         <span class="statement-lineno">Line 1</span>: <var>lastMove</var> — your opponent's last move as <const>row col</const>, or <const>null</const> if you are the first player on the first turn.
         <br>
-        <span class="statement-lineno">Next <const>8</const> lines</span>: a <const>16</const>-character string <var>cells</var>, encoding the full row with <const>2</const> characters per cell, row <const>0</const> first.
+        <span class="statement-lineno">Next <const>6</const> lines</span>: a <const>12</const>-character string <var>cells</var>, encoding the full row with <const>2</const> characters per cell, row <const>0</const> first.
         Each 2-character token is <const>..</const> (empty), <const>r1</const>–<const>r3</const> (red cell with 1–3 orbs), or <const>b1</const>–<const>b3</const> (blue cell with 1–3 orbs).
         Cell at column <var>c</var> is at characters <var>2c</var> and <var>2c+1</var>.
       </div>

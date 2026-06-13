@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Queue;
 
 public class Board {
-    public static final int SIZE = 8;
+    public static final int SIZE = 6;
 
     /** Critical mass = number of orthogonal neighbours (2 corners, 3 edges, 4 interior). */
     public static int criticalMass(int row, int col) {
@@ -46,7 +46,7 @@ public class Board {
         if (!isValid(row, col))
             throw new InvalidAction("Out of bounds: " + row + " " + col);
         Cell cell = grid[row][col];
-        if (cell.owner != playerIdx)
+        if (cell.owner != 0 && cell.owner != playerIdx)
             throw new InvalidAction("Cell (" + row + "," + col + ") does not belong to you");
 
         cell.owner = playerIdx;

@@ -2,13 +2,13 @@ read color:word(1)
 
 gameloop
 read lastMove:word(4)
-loop 8 read cells:string(16)
+loop 6 read cells:string(12)
 write random
 
 INPUT
 color: your color (r=red, b=blue)
 lastMove: opponent's last move as "row col", or "null" if you go first
-cells: 16-char string, 2 chars per cell — ".." (empty), "r1"-"r3" (red), "b1"-"b3" (blue)
+cells: 12-char string, 2 chars per cell — ".." (empty), "r1"-"r3" (red), "b1"-"b3" (blue)
 
 OUTPUT
 e.g. 3 5 (place an orb on row 3, column 5)

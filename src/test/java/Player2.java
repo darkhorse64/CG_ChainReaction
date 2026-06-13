@@ -1,8 +1,7 @@
 import java.util.Scanner;
 
 /**
- * Naive bot — picks the first own cell found.
- * Reads its assigned color at init and uses it to identify own cells in the grid.
+ * Random bot — picks a cell at random.
  */
 public class Player2 {
     public static void main(String[] args) {
@@ -12,15 +11,10 @@ public class Player2 {
         while (true) {
             String lastMove = in.nextLine().trim(); // "row col" or "null"
             int pickR = -1, pickC = -1;
-            for (int r = 0; r < 8; r++) {
+            for (int r = 0; r < 6; r++) {
                 String line = in.nextLine().trim();
-                for (int c = 0; c < 8; c++) {
-                    if (line.substring(c * 2, c * 2 + 2).startsWith(myColor) && pickR == -1) {
-                        pickR = r; pickC = c;
-                    }
-                }
             }
-            System.out.println(pickR + " " + pickC);
+            System.out.println("random");
         }
     }
 }

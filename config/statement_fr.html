@@ -11,14 +11,14 @@
       <span>Règles</span>
     </h1>
     <div class="statement-rules-content">
-      La partie se joue sur une grille <const>8×8</const>. Les lignes sont numérotées <const>0–7</const> de haut en bas, les colonnes <const>0–7</const> de gauche à droite.
+      La partie se joue sur une grille <const>6×6</const>. Les lignes sont numérotées <const>0–5</const> de haut en bas, les colonnes <const>0–5</const> de gauche à droite.
       <br><br>
-      La partie commence avec <strong>une orbe rouge dans le coin en haut à gauche (0,0)</strong> et <strong>une orbe bleue dans le coin en bas à droite (7,7)</strong>.
+      Le plateau est vide au départ.
       <br><br>
       <strong>Poser une orbe</strong>
       <ul>
-        <li>À votre tour, choisissez une case qui <strong>vous appartient déjà</strong> et ajoutez-y une orbe.</li>
-        <li>Vous ne pouvez pas jouer sur une case vide ni sur une case adverse.</li>
+        <li>À votre tour, choisissez une case <strong>vide</strong> ou qui <strong>vous appartient déjà</strong> et ajoutez-y une orbe.</li>
+        <li>Vous ne pouvez pas jouer sur une case adverse.</li>
       </ul>
       <strong>Masse critique et explosions</strong>
       <ul>
@@ -87,7 +87,7 @@
       <div class="text">
         <span class="statement-lineno">Ligne 1</span> : <var>lastMove</var> — le dernier coup joué par votre adversaire sous la forme <const>row col</const>, ou <const>null</const> si vous êtes le premier joueur au premier tour.
         <br>
-        <span class="statement-lineno"><const>8</const> lignes suivantes</span> : une chaîne de <const>16</const> caractères <var>cells</var>, encodant toute la ligne avec <const>2</const> caractères par case, ligne <const>0</const> en premier.
+        <span class="statement-lineno"><const>6</const> lignes suivantes</span> : une chaîne de <const>12</const> caractères <var>cells</var>, encodant toute la ligne avec <const>2</const> caractères par case, ligne <const>0</const> en premier.
         Chaque token de 2 caractères vaut <const>..</const> (vide), <const>r1</const>–<const>r3</const> (case rouge avec 1–3 orbes), ou <const>b1</const>–<const>b3</const> (case bleue avec 1–3 orbes).
         La case de colonne <var>c</var> se trouve aux caractères <var>2c</var> et <var>2c+1</var>.
       </div>

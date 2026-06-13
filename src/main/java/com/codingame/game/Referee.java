@@ -26,7 +26,7 @@ public class Referee extends AbstractReferee {
     // ── Layout ──────────────────────────────────────────────────────────────
     private static final int SCREEN_W = 1920;
     private static final int SCREEN_H = 1080;
-    private static final int CELL      = 90;
+    private static final int CELL      = 125;
     private static final int GRID_W    = Board.SIZE * CELL;
     private static final int GRID_X    = (SCREEN_W - GRID_W) / 2;
     private static final int GRID_Y    = (SCREEN_H - GRID_W) / 2;
@@ -243,12 +243,7 @@ public class Referee extends AbstractReferee {
     }
 
     private void placeStartingOrbs() {
-        board.getCell(0, 0).owner = 1;
-        board.getCell(0, 0).orbs  = 1;
-        board.getCell(Board.SIZE - 1, Board.SIZE - 1).owner = 2;
-        board.getCell(Board.SIZE - 1, Board.SIZE - 1).orbs  = 1;
-        syncCell(0, 0);
-        syncCell(Board.SIZE - 1, Board.SIZE - 1);
+        // Board starts empty — nothing to place
     }
 
     // ── Rendering helpers ───────────────────────────────────────────────────
@@ -707,7 +702,7 @@ public class Referee extends AbstractReferee {
         for (int r = 0; r < Board.SIZE; r++)
             for (int c = 0; c < Board.SIZE; c++) {
                 int owner = board.getCell(r, c).owner;
-                if (owner == playerIdx)
+                if (owner == 0 || owner == playerIdx)
                     valid.add(new int[]{r, c});
             }
         int[] pick = valid.get(random.nextInt(valid.size()));
