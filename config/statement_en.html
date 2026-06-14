@@ -85,7 +85,7 @@
     <div class="blk">
       <div class="title">Input for one game turn</div>
       <div class="text">
-        <span class="statement-lineno">Line 1</span>: <var>lastMove</var> — your opponent's last move as <const>row col</const>, or <const>null</const> if you are the first player on the first turn.
+        <span class="statement-lineno">Line 1</span>: <var>lastMove</var> — your opponent's last move in chess notation (e.g. <const>c4</const>), or <const>null</const> if you are the first player on the first turn.
         <br>
         <span class="statement-lineno">Next <const>6</const> lines</span>: a <const>12</const>-character string <var>cells</var>, encoding the full row with <const>2</const> characters per cell, row <const>0</const> first.
         Each 2-character token is <const>..</const> (empty), <const>r1</const>–<const>r3</const> (red cell with 1–3 orbs), or <const>b1</const>–<const>b3</const> (blue cell with 1–3 orbs).
@@ -96,9 +96,9 @@
     <div class="blk">
       <div class="title">Output for one game turn</div>
       <div class="text">
-        <span class="statement-lineno">A single line</span>: <var>row</var> <var>col</var> — the 0-based coordinates of the cell where you place your orb.
+        <span class="statement-lineno">A single line</span>: the cell in chess notation, e.g. <const>c4</const> — column letter (<const>a</const>–<const>f</const>, left to right) followed by row number (<const>1</const> at bottom, <const>6</const> at top).
         <br>
-        You may append a message after the coordinates, e.g. <const>3 5 message</const>.
+        You may append a message after the move, e.g. <const>c4 message</const>.
         <br>
         You may also send <const>random</const> to let the referee play a random valid move on your behalf.
       </div>

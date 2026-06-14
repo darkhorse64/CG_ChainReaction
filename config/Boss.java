@@ -37,7 +37,7 @@ class Player {
                     }
                 }
             }
-            System.out.println(bestR + " " + bestC);
+            System.out.println((char)('a' + bestC) + "" + (6 - bestR));
         }
     }
 }

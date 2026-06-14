@@ -85,7 +85,7 @@
     <div class="blk">
       <div class="title">Entrées pour un tour</div>
       <div class="text">
-        <span class="statement-lineno">Ligne 1</span> : <var>lastMove</var> — le dernier coup joué par votre adversaire sous la forme <const>row col</const>, ou <const>null</const> si vous êtes le premier joueur au premier tour.
+        <span class="statement-lineno">Ligne 1</span> : <var>lastMove</var> — le dernier coup joué par votre adversaire en notation échiquéenne (ex. <const>c4</const>), ou <const>null</const> si vous êtes le premier joueur au premier tour.
         <br>
         <span class="statement-lineno"><const>6</const> lignes suivantes</span> : une chaîne de <const>12</const> caractères <var>cells</var>, encodant toute la ligne avec <const>2</const> caractères par case, ligne <const>0</const> en premier.
         Chaque token de 2 caractères vaut <const>..</const> (vide), <const>r1</const>–<const>r3</const> (case rouge avec 1–3 orbes), ou <const>b1</const>–<const>b3</const> (case bleue avec 1–3 orbes).
@@ -96,9 +96,9 @@
     <div class="blk">
       <div class="title">Sortie pour un tour</div>
       <div class="text">
-        <span class="statement-lineno">Une ligne</span> : <var>row</var> <var>col</var> — les coordonnées (base 0) de la case où vous posez votre orbe.
+        <span class="statement-lineno">Une ligne</span> : la case en notation échiquéenne, ex. <const>c4</const> — lettre de colonne (<const>a</const>–<const>f</const>, gauche→droite) suivie du numéro de ligne (<const>1</const> en bas, <const>6</const> en haut).
         <br>
-        Vous pouvez ajouter un message après les coordonnées, e.g. <const>3 5 mon message</const>.
+        Vous pouvez ajouter un message après le coup, ex. <const>c4 message</const>.
         <br>
         Vous pouvez aussi envoyer <const>random</const> pour que l'arbitre joue un coup aléatoire à votre place parmi les coups valides.
       </div>

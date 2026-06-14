@@ -144,6 +144,24 @@ public class Referee extends AbstractReferee {
                 .setLineColor(COL_GRID).setLineWidth(3)
                 .setZIndex(1);
         }
+        // Column labels (a–f) top and bottom
+        for (int c = 0; c < Board.SIZE; c++) {
+            int x = GRID_X + c * CELL + CELL / 2;
+            String label = String.valueOf((char)('a' + c));
+            gem.createText(label).setX(x).setY(GRID_Y - 18)
+                .setAnchor(0.5).setFontSize(32).setFillColor(COL_WHITE).setAlpha(0.7).setZIndex(2);
+            gem.createText(label).setX(x).setY(GRID_Y + total + 18)
+                .setAnchor(0.5).setFontSize(32).setFillColor(COL_WHITE).setAlpha(0.7).setZIndex(2);
+        }
+        // Row labels (6 at top, 1 at bottom) left and right
+        for (int r = 0; r < Board.SIZE; r++) {
+            int y = GRID_Y + r * CELL + CELL / 2;
+            String label = String.valueOf(Board.SIZE - r);
+            gem.createText(label).setX(GRID_X - 18).setY(y)
+                .setAnchor(0.5).setFontSize(32).setFillColor(COL_WHITE).setAlpha(0.7).setZIndex(2);
+            gem.createText(label).setX(GRID_X + total + 18).setY(y)
+                .setAnchor(0.5).setFontSize(32).setFillColor(COL_WHITE).setAlpha(0.7).setZIndex(2);
+        }
     }
 
     private void drawHud() {
@@ -455,8 +473,9 @@ public class Referee extends AbstractReferee {
                 ? String.format(" and triggered %d explosion wave(s)", waveCount)
                 : "";
             gameManager.addToGameSummary(String.format(
-                "At game turn %d, %s played%s (%d %d)%s",
-                playerMoveCount + 1, player.getNicknameToken(), randomTag, action.row, action.col, explosionTag));
+                "At game turn %d, %s played%s %s%s",
+                playerMoveCount + 1, player.getNicknameToken(), randomTag,
+                toChess(action.row, action.col), explosionTag));
 
             // Build virtual state to track intermediate board states for animation
             int[][] vOrbs  = copyGrid(snapOrbs);
@@ -637,11 +656,7 @@ public class Referee extends AbstractReferee {
         }
 
         int[] opponentMove = lastMove[1 - pIdx];
-        if (opponentMove == null) {
-            player.sendInputLine("null");
-        } else {
-            player.sendInputLine(opponentMove[0] + " " + opponentMove[1]);
-        }
+        player.sendInputLine(opponentMove == null ? "null" : toChess(opponentMove[0], opponentMove[1]));
 
         for (int r = 0; r < Board.SIZE; r++) {
             StringBuilder sb = new StringBuilder();
@@ -707,6 +722,10 @@ public class Referee extends AbstractReferee {
             }
         int[] pick = valid.get(random.nextInt(valid.size()));
         return new Action(player, pick[0], pick[1]);
+    }
+
+    private static String toChess(int row, int col) {
+        return String.valueOf((char)('a' + col)) + (Board.SIZE - row);
     }
 
     private static int[][] copyGrid(int[][] src) {
