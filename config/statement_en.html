@@ -11,7 +11,7 @@
       <span>Rules</span>
     </h1>
     <div class="statement-rules-content">
-      The game is played on a <const>6×6</const> grid. Rows are numbered <const>0–5</const> top to bottom, columns <const>0–5</const> left to right.
+      The game is played on a <const>6×6</const> board. Rows are numbered <const>0–5</const> top to bottom, columns <const>0–5</const> left to right.
       <br><br>
       The board starts empty.
       <br><br>
@@ -23,7 +23,7 @@
       <strong>Critical mass &amp; explosions</strong>
       <ul>
         <li>Each cell's critical mass equals its number of orthogonal neighbours: <const>2</const> for corners, <const>3</const> for edges, <const>4</const> for interior cells.</li>
-        <li>When a cell reaches its critical mass it <strong>explodes</strong>: the cell empties, each orthogonal neighbour receives 1 orb and is captured by you including its orbs.</li>
+        <li>When a cell reaches its critical mass it <strong>explodes</strong>: the cell empties, each orthogonal neighbour receives 1 orb and is captured by you, including its orbs.</li>
         <li>A neighbour that then reaches its critical mass also explodes — producing a <strong>chain reaction</strong>.</li>
       </ul>
     </div>
@@ -47,7 +47,7 @@
       <div class="title">Victory Conditions</div>
       <div class="text">
         <ul style="padding-bottom:0">
-          <li>All cells on the board belong to you.</li>
+          <li>Your opponent has no cells left on the board (after each player has made at least one move).</li>
         </ul>
       </div>
     </div>
@@ -60,8 +60,8 @@
       <div class="title">Loss Conditions</div>
       <div class="text">
         <ul style="padding-bottom:0">
-          <li>You have no cells left on the board.</li>
-          <li>You play on a cell that does not belong to you.</li>
+          <li>You have no cells left on the board (after each player has made at least one move).</li>
+          <li>You play on a cell that belongs to your opponent.</li>
           <li>You do not respond in time or output an invalid move.</li>
         </ul>
       </div>

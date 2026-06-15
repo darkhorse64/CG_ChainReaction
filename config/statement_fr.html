@@ -11,7 +11,7 @@
       <span>Règles</span>
     </h1>
     <div class="statement-rules-content">
-      La partie se joue sur une grille <const>6×6</const>. Les lignes sont numérotées <const>0–5</const> de haut en bas, les colonnes <const>0–5</const> de gauche à droite.
+      La partie se joue sur une plateau <const>6×6</const>. Les lignes sont numérotées <const>0–5</const> de haut en bas, les colonnes <const>0–5</const> de gauche à droite.
       <br><br>
       Le plateau est vide au départ.
       <br><br>
@@ -23,7 +23,7 @@
       <strong>Masse critique et explosions</strong>
       <ul>
         <li>La masse critique d'une case est égale à son nombre de voisins orthogonaux : <const>2</const> pour les coins, <const>3</const> pour les bords, <const>4</const> pour les cases intérieures.</li>
-        <li>Lorsqu'une case atteint sa masse critique, elle <strong>explose</strong> : la case se vide, chacun de ses voisins orthogonaux reçoit 1 orbe et est capturé par vous y compris ses orbes.</li>
+        <li>Lorsqu'une case atteint sa masse critique, elle <strong>explose</strong> : la case se vide, chacun de ses voisins orthogonaux reçoit 1 orbe et est capturé par vous, y compris ses orbes.</li>
         <li>Un voisin qui atteint alors sa masse critique explose à son tour — produisant une <strong>réaction en chaîne</strong>.</li>
       </ul>
     </div>
@@ -47,7 +47,7 @@
       <div class="title">Conditions de victoire</div>
       <div class="text">
         <ul style="padding-bottom:0">
-          <li>Toutes les cases du plateau vous appartiennent.</li>
+          <li>Votre adversaire ne contrôle plus aucune case sur le plateau (après que chaque joueur ait joué au moins un coup).</li>
         </ul>
       </div>
     </div>
@@ -60,8 +60,8 @@
       <div class="title">Conditions de défaite</div>
       <div class="text">
         <ul style="padding-bottom:0">
-          <li>Vous n'avez plus aucune case sur le plateau.</li>
-          <li>Vous jouez sur une case qui ne vous appartient pas.</li>
+          <li>Vous ne contrôlez plus aucune case sur le plateau (après que chaque joueur ait joué au moins un coup).</li>
+          <li>Vous jouez sur une case qui appartient à votre adversaire.</li>
           <li>Vous ne répondez pas dans les délais ou envoyez un coup invalide.</li>
         </ul>
       </div>

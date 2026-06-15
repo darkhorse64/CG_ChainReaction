@@ -407,15 +407,13 @@ public class Referee extends AbstractReferee {
             WaveFrame wf = pendingFrames.poll();
             animateWaveFrame(wf);  // updateScores() called inside with intermediate state
 
-            if (pendingFrames.isEmpty()) {
-                if (pendingEndGame) {
-                    if (pendingWinnerIdx > 0) {
+            if (pendingFrames.isEmpty() && pendingEndGame) {
+                if (pendingWinnerIdx > 0) {
                         Player winner = gameManager.getPlayer(pendingWinnerIdx - 1);
                         winner.setScore(board.countCells(pendingWinnerIdx));
                         gameManager.addToGameSummary(winner.getNicknameToken() + " wins!");
                     }
                     gameManager.endGame();
-                }
             }
             return;
         }
@@ -436,12 +434,13 @@ public class Referee extends AbstractReferee {
             Action action;
             String rawOutput = player.getOutputs().get(0).trim();
             String playerMessage = "";
-            if (rawOutput.equalsIgnoreCase("random")) {
+            String[] parts = rawOutput.split("\\s+", 2);
+            if (parts[0].equalsIgnoreCase("random")) {
                 action = randomAction(player, playerIdx);
+                if (parts.length >= 2) playerMessage = parts[1];
             } else {
                 action = player.getAction();
-                String[] parts = rawOutput.split("\\s+", 3);
-                if (parts.length >= 3) playerMessage = parts[2];
+                if (parts.length >= 2) playerMessage = parts[1];
             }
 
             // Update message in HUD: show current player's message, clear opponent's
@@ -467,7 +466,7 @@ public class Referee extends AbstractReferee {
             lastMove[currentPlayerTurn] = new int[]{action.row, action.col};
 
             // Game summary
-            String randomTag = rawOutput.equalsIgnoreCase("random") ? " random →" : "";
+            String randomTag = parts[0].equalsIgnoreCase("random") ? " random →" : "";
             int waveCount = waves.size();
             String explosionTag = waveCount > 0
                 ? String.format(" and triggered %d explosion wave(s)", waveCount)
@@ -475,7 +474,7 @@ public class Referee extends AbstractReferee {
             gameManager.addToGameSummary(String.format(
                 "At game turn %d, %s played%s %s%s",
                 playerMoveCount + 1, player.getNicknameToken(), randomTag,
-                toChess(action.row, action.col), explosionTag));
+                Board.toChess(action.row, action.col), explosionTag));
 
             // Build virtual state to track intermediate board states for animation
             int[][] vOrbs  = copyGrid(snapOrbs);
@@ -528,7 +527,7 @@ public class Referee extends AbstractReferee {
                 }
             updateScores(snapCells1, snapCells2);
 
-            // ── Win check ────────────────────────────────────────────────────
+            // ── Win / draw check ─────────────────────────────────────────────
             playerMoveCount++;
             if (playerMoveCount >= 2) {
                 int opponent = (playerIdx == 1) ? 2 : 1;
@@ -543,6 +542,12 @@ public class Referee extends AbstractReferee {
                     }
                     return;
                 }
+            }
+            if (playerMoveCount >= 200) {
+                gameManager.addToGameSummary("200 turns reached — draw!");
+                pendingEndGame   = true;
+                if (pendingFrames.isEmpty()) gameManager.endGame();
+                return;
             }
 
             // Advance to next player
@@ -656,7 +661,7 @@ public class Referee extends AbstractReferee {
         }
 
         int[] opponentMove = lastMove[1 - pIdx];
-        player.sendInputLine(opponentMove == null ? "null" : toChess(opponentMove[0], opponentMove[1]));
+        player.sendInputLine(opponentMove == null ? "null" : Board.toChess(opponentMove[0], opponentMove[1]));
 
         for (int r = 0; r < Board.SIZE; r++) {
             StringBuilder sb = new StringBuilder();
@@ -691,12 +696,12 @@ public class Referee extends AbstractReferee {
             // One player was disqualified
             text[0] = scores[0] < 0 ? "Disqualified" : "Won " + cells0 + " cells";
             text[1] = scores[1] < 0 ? "Disqualified" : "Won " + cells1 + " cells";
-        } else if (cells0 > cells1) {
+        } else if (cells0 > 0 && cells1 == 0) {
             text[0] = "Won — " + cells0 + " cells";
             text[1] = "Lost — " + cells1 + " cells";
             gameManager.addTooltip(players.get(0),
                 players.get(0).getNicknameToken() + " wins!");
-        } else if (cells1 > cells0) {
+        } else if (cells1 > 0 && cells0 == 0) {
             text[0] = "Lost — " + cells0 + " cells";
             text[1] = "Won — " + cells1 + " cells";
             gameManager.addTooltip(players.get(1),
@@ -722,10 +727,6 @@ public class Referee extends AbstractReferee {
             }
         int[] pick = valid.get(random.nextInt(valid.size()));
         return new Action(player, pick[0], pick[1]);
-    }
-
-    private static String toChess(int row, int col) {
-        return String.valueOf((char)('a' + col)) + (Board.SIZE - row);
     }
 
     private static int[][] copyGrid(int[][] src) {

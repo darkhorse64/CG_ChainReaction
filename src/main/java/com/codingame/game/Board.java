@@ -37,6 +37,10 @@ public class Board {
         return row >= 0 && row < SIZE && col >= 0 && col < SIZE;
     }
 
+    public static String toChess(int row, int col) {
+        return String.valueOf((char)('a' + col)) + (SIZE - row);
+    }
+
     /**
      * Returns chain-reaction explosions grouped by BFS wave.
      * Each inner list contains the cells [row,col] that explode simultaneously in that wave.
@@ -44,10 +48,10 @@ public class Board {
      */
     public List<List<int[]>> play(int row, int col, int playerIdx) throws InvalidAction {
         if (!isValid(row, col))
-            throw new InvalidAction("Out of bounds: " + row + " " + col);
+            throw new InvalidAction("Out of bounds: " + toChess(row, col));
         Cell cell = grid[row][col];
         if (cell.owner != 0 && cell.owner != playerIdx)
-            throw new InvalidAction("Cell (" + row + "," + col + ") does not belong to you");
+            throw new InvalidAction("Cell " + toChess(row, col) + " belongs to your opponent");
 
         cell.owner = playerIdx;
         cell.orbs++;
