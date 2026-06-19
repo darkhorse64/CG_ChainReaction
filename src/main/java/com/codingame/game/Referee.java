@@ -16,6 +16,7 @@ import com.codingame.gameengine.module.entities.Curve;
 import com.codingame.gameengine.module.entities.GraphicEntityModule;
 import com.codingame.gameengine.module.entities.Group;
 import com.codingame.gameengine.module.entities.Rectangle;
+import com.codingame.gameengine.module.entities.RoundedRectangle;
 import com.codingame.gameengine.module.entities.Sprite;
 import com.codingame.gameengine.module.entities.Text;
 import com.codingame.gameengine.module.toggle.ToggleModule;
@@ -33,7 +34,6 @@ public class Referee extends AbstractReferee {
 
     // ── Colours ─────────────────────────────────────────────────────────────
     private static final int COL_BG    = 0x0d0d1a;
-    private static final int COL_GRID  = 0x3a3a6a;
     private static final int COL_WHITE = 0xFFFFFF;
 
     // ── Dot offsets (relative to cell centre) ───────────────────────────────
@@ -127,39 +127,49 @@ public class Referee extends AbstractReferee {
     }
 
     private void drawGrid() {
-        int total = Board.SIZE * CELL;
-        for (int i = 0; i <= Board.SIZE; i++) {
-            int y = GRID_Y + i * CELL;
-            gem.createLine()
-                .setX(GRID_X).setY(y)
-                .setX2(GRID_X + total).setY2(y)
-                .setLineColor(COL_GRID).setLineWidth(3)
-                .setZIndex(1);
+        int total    = Board.SIZE * CELL;
+        int margin   = 5;
+        int cellSize = CELL - 2 * margin;
+        int radius   = 16;
+
+        // Outer border
+        gem.createRoundedRectangle()
+            .setWidth(total + 10).setHeight(total + 10)
+            .setX(GRID_X - 5).setY(GRID_Y - 5)
+            .setFillColor(COL_BG).setFillAlpha(0)
+            .setLineColor(0x5a5a6a).setLineWidth(4)
+            .setRadius(radius + margin)
+            .setZIndex(1);
+
+        // Cell backgrounds — rounded dark squares with white liseré
+        for (int r = 0; r < Board.SIZE; r++) {
+            for (int c = 0; c < Board.SIZE; c++) {
+                gem.createRoundedRectangle()
+                    .setWidth(cellSize).setHeight(cellSize)
+                    .setX(GRID_X + c * CELL + margin).setY(GRID_Y + r * CELL + margin)
+                    .setFillColor(0x1a1a2e).setFillAlpha(1)
+                    .setLineColor(COL_WHITE).setLineWidth(2).setLineAlpha(0.25)
+                    .setRadius(radius)
+                    .setZIndex(1);
+            }
         }
-        for (int i = 0; i <= Board.SIZE; i++) {
-            int x = GRID_X + i * CELL;
-            gem.createLine()
-                .setX(x).setY(GRID_Y)
-                .setX2(x).setY2(GRID_Y + total)
-                .setLineColor(COL_GRID).setLineWidth(3)
-                .setZIndex(1);
-        }
+
         // Column labels (a–f) top and bottom
         for (int c = 0; c < Board.SIZE; c++) {
             int x = GRID_X + c * CELL + CELL / 2;
             String label = String.valueOf((char)('a' + c));
-            gem.createText(label).setX(x).setY(GRID_Y - 18)
+            gem.createText(label).setX(x).setY(GRID_Y - 22)
                 .setAnchor(0.5).setFontSize(32).setFillColor(COL_WHITE).setAlpha(0.7).setZIndex(2);
-            gem.createText(label).setX(x).setY(GRID_Y + total + 18)
+            gem.createText(label).setX(x).setY(GRID_Y + total + 22)
                 .setAnchor(0.5).setFontSize(32).setFillColor(COL_WHITE).setAlpha(0.7).setZIndex(2);
         }
         // Row labels (6 at top, 1 at bottom) left and right
         for (int r = 0; r < Board.SIZE; r++) {
             int y = GRID_Y + r * CELL + CELL / 2;
             String label = String.valueOf(Board.SIZE - r);
-            gem.createText(label).setX(GRID_X - 18).setY(y)
+            gem.createText(label).setX(GRID_X - 22).setY(y)
                 .setAnchor(0.5).setFontSize(32).setFillColor(COL_WHITE).setAlpha(0.7).setZIndex(2);
-            gem.createText(label).setX(GRID_X + total + 18).setY(y)
+            gem.createText(label).setX(GRID_X + total + 22).setY(y)
                 .setAnchor(0.5).setFontSize(32).setFillColor(COL_WHITE).setAlpha(0.7).setZIndex(2);
         }
     }
@@ -231,7 +241,8 @@ public class Referee extends AbstractReferee {
                     .setRadius(38)
                     .setX(0).setY(0)
                     .setFillColor(COL_WHITE).setAlpha(0)
-                    .setLineWidth(0).setZIndex(0);
+                    .setLineColor(COL_WHITE).setLineWidth(3)
+                    .setZIndex(0);
 
                 for (int d = 0; d < 4; d++) {
                     dots[r][c][d] = gem.createCircle()
